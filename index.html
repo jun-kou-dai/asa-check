@@ -1010,7 +1010,7 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js';
   import {
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    signInAnonymously, onAuthStateChanged, signOut
+    onAuthStateChanged, signOut
   } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js';
   import {
     getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
@@ -1882,13 +1882,13 @@
         const existing = currentDailyStatus?.checks?.[item.id];
         allChecks[`checks.${item.id}`] = existing?.checked
           ? existing
-          : { checked: true, at: now };
+          : { checked: true, checkedAt: now };
       });
 
       if (!currentDailyStatus) {
         const checksObj = {};
         checkItems.filter(i => i.isActive).forEach(item => {
-          checksObj[item.id] = { checked: true, at: now };
+          checksObj[item.id] = { checked: true, checkedAt: now };
         });
         await setDoc(statusRef, {
           checks: checksObj,
