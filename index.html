@@ -879,6 +879,7 @@
     <div class="invite-code-display">
       <div class="invite-code-label">招待コード</div>
       <div class="invite-code-value" id="child-settings-invite-code"></div>
+      <div class="text-xs" style="margin-top:8px;color:#888">親がログインできない時にこのコードを伝えてください</div>
     </div>
   </div>
   <button class="btn btn-danger mt-24" onclick="handleLogout()">ログアウト</button>
@@ -1401,7 +1402,12 @@
         status: 'active'
       });
 
-      // Keep invite code for re-login (don't delete it)
+      // Save to localStorage for auto-reconnect
+      localStorage.setItem('asacheck_parent', JSON.stringify({
+        code: code,
+        name: name,
+        familyId: targetFamilyId
+      }));
 
       isSettingUp = false;
       await loadUserAndRoute(cred.user);
@@ -1485,6 +1491,39 @@
       if (user) {
         await loadUserAndRoute(user);
       } else {
+        // Try auto-reconnect for parent
+        const saved = localStorage.getItem('asacheck_parent');
+        if (saved) {
+          try {
+            const { code, name, familyId: savedFamilyId } = JSON.parse(saved);
+            isSettingUp = true;
+            const cred = await signInAnonymously(auth);
+            const uid = cred.user.uid;
+
+            await setDoc(doc(db, 'users', uid), {
+              role: 'parent',
+              name: name,
+              email: null,
+              familyId: savedFamilyId,
+              createdAt: serverTimestamp()
+            });
+
+            await updateDoc(doc(db, 'families', savedFamilyId), {
+              parentId: uid,
+              parentName: name,
+              status: 'active'
+            });
+
+            isSettingUp = false;
+            await loadUserAndRoute(cred.user);
+            return;
+          } catch (e) {
+            console.error('Auto-reconnect failed:', e);
+            localStorage.removeItem('asacheck_parent');
+            isSettingUp = false;
+          }
+        }
+
         currentUser = null;
         userDoc = null;
         familyId = null;
@@ -2160,14 +2199,10 @@
   function initChildSettings() {
     showScreen('screen-child-settings');
 
-    // Show invite code if still pending
+    // Always show invite code (parent may need it to reconnect)
     const inviteSection = document.getElementById('child-settings-invite');
-    if (familyData.status === 'pending') {
-      inviteSection.style.display = 'block';
-      document.getElementById('child-settings-invite-code').textContent = familyData.inviteCode;
-    } else {
-      inviteSection.style.display = 'none';
-    }
+    inviteSection.style.display = 'block';
+    document.getElementById('child-settings-invite-code').textContent = familyData.inviteCode;
   }
 
   // ================================================================
