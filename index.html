@@ -879,8 +879,11 @@
     <div class="invite-code-display">
       <div class="invite-code-label">招待コード</div>
       <div class="invite-code-value" id="child-settings-invite-code"></div>
-      <div class="text-xs" style="margin-top:8px;color:#888">親がログインできない時にこのコードを伝えてください</div>
     </div>
+    <button class="btn btn-primary mt-16" onclick="handleShareParentLink()" style="width:100%">親にログインリンクを送る</button>
+    <div class="text-xs" style="margin-top:8px;color:#888">LINEなどで親にリンクを送れます。タップするだけでログインできます</div>
+    <button class="btn btn-secondary mt-16" onclick="handleResetParent()" style="width:100%">親の接続をリセット</button>
+    <div class="text-xs" style="margin-top:4px;color:#888">親がログインできない時に使います</div>
   </div>
   <button class="btn btn-danger mt-24" onclick="handleLogout()">ログアウト</button>
 </div>
@@ -1180,6 +1183,8 @@
   window.handleAddSchedule = handleAddSchedule;
   window.handleAddItemParent = handleAddItemParent;
   window.handleAddScheduleParent = handleAddScheduleParent;
+  window.handleShareParentLink = handleShareParentLink;
+  window.handleResetParent = handleResetParent;
   window.saveNotifySettings = saveNotifySettings;
   window.navigate = navigate;
   window.closeModal = closeModal;
@@ -1360,11 +1365,28 @@
 
     showLoading();
     isSettingUp = true;
+
     try {
-      const cred = await signInAnonymously(auth);
+      // Use email/password auth (invite code = password, persistent session)
+      const parentEmail = `parent-${code}@asacheck.app`;
+      let cred;
+      let isReturning = false;
+      try {
+        // First time: create account
+        cred = await createUserWithEmailAndPassword(auth, parentEmail, code);
+      } catch (e) {
+        if (e.code === 'auth/email-already-in-use') {
+          // Returning parent: sign in to existing account
+          cred = await signInWithEmailAndPassword(auth, parentEmail, code);
+          isReturning = true;
+        } else {
+          throw e;
+        }
+      }
+
       const uid = cred.user.uid;
 
-      // Look up invite code
+      // Look up invite code (now authenticated)
       const codeSnap = await getDoc(doc(db, 'inviteCodes', code));
       if (!codeSnap.exists()) {
         isSettingUp = false;
@@ -1373,41 +1395,18 @@
         showToast('招待コードが見つかりません');
         return;
       }
-
       const targetFamilyId = codeSnap.data().familyId;
 
-      // Create parent user doc FIRST (so isMember() works)
+      // Create/update parent user doc
       await setDoc(doc(db, 'users', uid), {
-        role: 'parent',
-        name: name,
-        email: null,
-        familyId: targetFamilyId,
-        createdAt: serverTimestamp()
-      });
+        role: 'parent', name: name, email: parentEmail,
+        familyId: targetFamilyId, createdAt: serverTimestamp()
+      }, { merge: true });
 
-      const familySnap = await getDoc(doc(db, 'families', targetFamilyId));
-      if (!familySnap.exists()) {
-        await deleteDoc(doc(db, 'users', uid));
-        isSettingUp = false;
-        await signOut(auth);
-        hideLoading();
-        showToast('この招待コードは無効です');
-        return;
-      }
-
-      // Allow both initial join (pending) AND re-join (active)
+      // Activate family
       await updateDoc(doc(db, 'families', targetFamilyId), {
-        parentId: uid,
-        parentName: name,
-        status: 'active'
+        parentId: uid, parentName: name, status: 'active'
       });
-
-      // Save to localStorage for auto-reconnect
-      localStorage.setItem('asacheck_parent', JSON.stringify({
-        code: code,
-        name: name,
-        familyId: targetFamilyId
-      }));
 
       isSettingUp = false;
       await loadUserAndRoute(cred.user);
@@ -1418,6 +1417,102 @@
       console.error(e);
       try { await signOut(auth); } catch (_) {}
     }
+  }
+
+  // ================================================================
+  // Auth: Auto Join (via link, no user input needed)
+  // ================================================================
+  async function handleAutoJoin(code) {
+    showLoading();
+    isSettingUp = true;
+    try {
+      const parentEmail = `parent-${code}@asacheck.app`;
+      let cred;
+      try {
+        cred = await createUserWithEmailAndPassword(auth, parentEmail, code);
+      } catch (e) {
+        if (e.code === 'auth/email-already-in-use') {
+          cred = await signInWithEmailAndPassword(auth, parentEmail, code);
+        } else {
+          throw e;
+        }
+      }
+
+      const uid = cred.user.uid;
+      const codeSnap = await getDoc(doc(db, 'inviteCodes', code));
+      if (!codeSnap.exists()) {
+        isSettingUp = false;
+        await signOut(auth);
+        hideLoading();
+        showToast('無効なリンクです');
+        showScreen('screen-login');
+        return;
+      }
+
+      const targetFamilyId = codeSnap.data().familyId;
+
+      // Create user doc FIRST so isMember() works for family read
+      await setDoc(doc(db, 'users', uid), {
+        role: 'parent', name: '親', email: parentEmail,
+        familyId: targetFamilyId, createdAt: serverTimestamp()
+      }, { merge: true });
+
+      // Now we can read family (isMember check passes)
+      const familySnap = await getDoc(doc(db, 'families', targetFamilyId));
+      const parentName = familySnap.exists() ? (familySnap.data().parentName || '親') : '親';
+
+      // Update user with real name and activate family
+      await setDoc(doc(db, 'users', uid), { name: parentName }, { merge: true });
+      await updateDoc(doc(db, 'families', targetFamilyId), {
+        parentId: uid, status: 'active'
+      });
+
+      isSettingUp = false;
+      await loadUserAndRoute(cred.user);
+    } catch (e) {
+      isSettingUp = false;
+      hideLoading();
+      showToast('ログインに失敗しました');
+      console.error(e);
+      try { await signOut(auth); } catch (_) {}
+      showScreen('screen-login');
+    }
+  }
+
+  // Share parent link (called from child settings)
+  function handleShareParentLink() {
+    const code = familyData?.inviteCode;
+    if (!code) { showToast('招待コードが見つかりません'); return; }
+    const url = `${window.location.origin}${window.location.pathname}#/auto/${code}`;
+
+    if (navigator.share) {
+      navigator.share({ title: '朝チェック', text: 'このリンクをタップしてログインしてください', url: url });
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('リンクをコピーしました。LINEなどで送ってください');
+      }).catch(() => {
+        showToast(url);
+      });
+    }
+  }
+
+  // Reset parent connection (called from child settings)
+  function handleResetParent() {
+    showModal('親の接続をリセット', '親のログイン状態をリセットします。リセット後、「親にログインリンクを送る」で再接続できます。', 'リセットする', async () => {
+      try {
+        await updateDoc(doc(db, 'families', familyId), {
+          parentId: null,
+          status: 'pending'
+        });
+        familyData.parentId = null;
+        familyData.status = 'pending';
+        showToast('リセットしました。リンクを送ってください');
+        initChildSettings();
+      } catch (e) {
+        showToast('リセットに失敗しました');
+        console.error(e);
+      }
+    });
   }
 
   // ================================================================
@@ -1491,45 +1586,20 @@
       if (user) {
         await loadUserAndRoute(user);
       } else {
-        // Try auto-reconnect for parent
-        const saved = localStorage.getItem('asacheck_parent');
-        if (saved) {
-          try {
-            const { code, name, familyId: savedFamilyId } = JSON.parse(saved);
-            isSettingUp = true;
-            const cred = await signInAnonymously(auth);
-            const uid = cred.user.uid;
-
-            await setDoc(doc(db, 'users', uid), {
-              role: 'parent',
-              name: name,
-              email: null,
-              familyId: savedFamilyId,
-              createdAt: serverTimestamp()
-            });
-
-            await updateDoc(doc(db, 'families', savedFamilyId), {
-              parentId: uid,
-              parentName: name,
-              status: 'active'
-            });
-
-            isSettingUp = false;
-            await loadUserAndRoute(cred.user);
-            return;
-          } catch (e) {
-            console.error('Auto-reconnect failed:', e);
-            localStorage.removeItem('asacheck_parent');
-            isSettingUp = false;
-          }
-        }
-
         currentUser = null;
         userDoc = null;
         familyId = null;
         familyData = null;
-        hideLoading();
+
+        // Auto-join link: #/auto/INVITE_CODE
         const hash = window.location.hash;
+        const autoMatch = hash.match(/^#\/auto\/(\d{6})$/);
+        if (autoMatch) {
+          await handleAutoJoin(autoMatch[1]);
+          return;
+        }
+
+        hideLoading();
         if (hash === '#/join') {
           showScreen('screen-join');
         } else {
