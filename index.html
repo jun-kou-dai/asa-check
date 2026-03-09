@@ -1809,14 +1809,29 @@
     const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
 
     try {
+      // 全チェック項目をチェック済みにする
+      const now = new Date().toISOString();
+      const allChecks = {};
+      checkItems.filter(i => i.isActive).forEach(item => {
+        const existing = currentDailyStatus?.checks?.[item.id];
+        allChecks[`checks.${item.id}`] = existing?.checked
+          ? existing
+          : { checked: true, at: now };
+      });
+
       if (!currentDailyStatus) {
+        const checksObj = {};
+        checkItems.filter(i => i.isActive).forEach(item => {
+          checksObj[item.id] = { checked: true, at: now };
+        });
         await setDoc(statusRef, {
-          checks: {},
+          checks: checksObj,
           isCompleted: true,
           completedAt: serverTimestamp()
         });
       } else {
         await updateDoc(statusRef, {
+          ...allChecks,
           isCompleted: true,
           completedAt: serverTimestamp()
         });
