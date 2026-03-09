@@ -668,6 +668,9 @@
   <div class="text-center">
     <a href="#/join" style="font-size:0.89rem">親としてはじめる方はこちら</a>
   </div>
+  <div class="text-center" style="margin-top:24px">
+    <a href="javascript:void(0)" onclick="handleAppReset()" style="font-size:0.8rem;color:#aaa">うまくいかない場合はここをタップしてリセット</a>
+  </div>
 </div>
 
 <!-- ====== Join Screen (Parent) ====== -->
@@ -1188,6 +1191,14 @@
   window.saveNotifySettings = saveNotifySettings;
   window.navigate = navigate;
   window.closeModal = closeModal;
+  window.handleAppReset = async function() {
+    try { await signOut(auth); } catch (_) {}
+    localStorage.clear();
+    currentUser = null; userDoc = null; familyId = null; familyData = null;
+    showToast('リセットしました');
+    window.location.hash = '';
+    window.location.reload();
+  };
 
   // ================================================================
   // Router
@@ -1594,16 +1605,21 @@
         }
         handleRoute();
       } else {
-        // User doc doesn't exist (shouldn't happen normally)
+        // User doc doesn't exist - auto sign out and reset
+        console.log('No user doc found, signing out');
+        localStorage.removeItem('asa-parent-code');
+        await signOut(auth);
+        currentUser = null; userDoc = null; familyId = null; familyData = null;
         hideLoading();
         showScreen('screen-login');
-        navigate('#/login');
       }
     } catch (e) {
       console.error('Error loading user:', e);
+      localStorage.removeItem('asa-parent-code');
+      try { await signOut(auth); } catch (_) {}
+      currentUser = null; userDoc = null; familyId = null; familyData = null;
       hideLoading();
       showScreen('screen-login');
-      navigate('#/login');
     }
   }
 
