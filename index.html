@@ -1408,6 +1408,9 @@
         parentId: uid, parentName: name, status: 'active'
       });
 
+      // Save credentials for auto-reconnect
+      localStorage.setItem('asa-parent-code', code);
+
       isSettingUp = false;
       await loadUserAndRoute(cred.user);
     } catch (e) {
@@ -1416,6 +1419,31 @@
       showToast('参加に失敗しました');
       console.error(e);
       try { await signOut(auth); } catch (_) {}
+    }
+  }
+
+  // ================================================================
+  // Auth: Auto reconnect (parent session restore)
+  // ================================================================
+  async function autoReconnectParent() {
+    const code = localStorage.getItem('asa-parent-code');
+    if (!code) return false;
+
+    showLoading();
+    isSettingUp = true;
+    try {
+      const parentEmail = `parent-${code}@asacheck.app`;
+      const cred = await signInWithEmailAndPassword(auth, parentEmail, code);
+      isSettingUp = false;
+      await loadUserAndRoute(cred.user);
+      return true;
+    } catch (e) {
+      console.error('Auto-reconnect failed:', e);
+      // Credentials invalid, clear them
+      localStorage.removeItem('asa-parent-code');
+      isSettingUp = false;
+      hideLoading();
+      return false;
     }
   }
 
@@ -1466,6 +1494,9 @@
       await updateDoc(doc(db, 'families', targetFamilyId), {
         parentId: uid, status: 'active'
       });
+
+      // Save credentials for auto-reconnect
+      localStorage.setItem('asa-parent-code', code);
 
       isSettingUp = false;
       await loadUserAndRoute(cred.user);
@@ -1598,6 +1629,10 @@
           await handleAutoJoin(autoMatch[1]);
           return;
         }
+
+        // Auto-reconnect: parent saved credentials
+        const reconnected = await autoReconnectParent();
+        if (reconnected) return;
 
         hideLoading();
         if (hash === '#/join') {
