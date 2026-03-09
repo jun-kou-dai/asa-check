@@ -752,15 +752,7 @@
     <button class="page-header-back" onclick="navigate('#/parent')">&#8592;</button>
     <div class="page-header-title">設定</div>
   </div>
-  <ul class="settings-list">
-    <li><a class="settings-item" href="#/parent/items">
-      <span class="settings-icon">&#9989;</span>チェック項目の編集<span class="settings-arrow">&#8250;</span>
-    </a></li>
-    <li><a class="settings-item" href="#/parent/schedule">
-      <span class="settings-icon">&#128197;</span>予定の管理<span class="settings-arrow">&#8250;</span>
-    </a></li>
-  </ul>
-  <div class="card mt-24">
+  <div class="card">
     <div class="text-sm">お名前</div>
     <div class="text-md" id="parent-settings-name" style="margin-top:4px"></div>
   </div>
@@ -1062,6 +1054,7 @@
   let currentDailyStatus = null;
   let unsubscribers = [];
   let isSettingUp = false; // 登録/参加処理中フラグ（onAuthStateChangedの早期発火を抑制）
+  let cachedChildPraise = null; // 子ども画面の称賛メッセージキャッシュ（onSnapshot毎の変更を防ぐ）
 
   // ================================================================
   // Utility Functions
@@ -1201,7 +1194,22 @@
       try {
         const todayStr = getTodayStr();
         const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
-        await setDoc(statusRef, { checks: {}, scheduleChecks: {}, isCompleted: false, completedAt: null });
+        await updateDoc(statusRef, { checks: {}, isCompleted: false, completedAt: null });
+        cachedChildPraise = null;
+        showToast('クリアしました');
+      } catch (e) {
+        showToast('クリアに失敗しました');
+        console.error(e);
+      }
+    });
+  };
+  window.handleChildClearComplete = function() {
+    showModal('やり直し', '今日のチェックをクリアして、やり直してもらいますか？', 'やり直してもらう', async () => {
+      try {
+        const todayStr = getTodayStr();
+        const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
+        await updateDoc(statusRef, { checks: {}, isCompleted: false, completedAt: null });
+        cachedChildPraise = null;
         showToast('クリアしました');
       } catch (e) {
         showToast('クリアに失敗しました');
@@ -1560,10 +1568,15 @@
   function handleResetParent() {
     showModal('親の接続をリセット', '親のログイン状態をリセットします。リセット後、「親にログインリンクを送る」で再接続できます。', 'リセットする', async () => {
       try {
+        const parentId = familyData.parentId;
         await updateDoc(doc(db, 'families', familyId), {
           parentId: null,
           status: 'pending'
         });
+        // 親のユーザードキュメントを削除（自動再接続が正常に失敗するように）
+        if (parentId) {
+          try { await deleteDoc(doc(db, 'users', parentId)); } catch (_) {}
+        }
         familyData.parentId = null;
         familyData.status = 'pending';
         showToast('リセットしました。リンクを送ってください');
@@ -1581,14 +1594,17 @@
   async function handleLogout() {
     showModal('ログアウト', 'ログアウトしますか？', 'ログアウト', async () => {
       cleanupListeners();
+      isSettingUp = true; // signOut中のonAuthStateChanged発火を抑制
       localStorage.clear();
-      await signOut(auth);
       currentUser = null;
       userDoc = null;
       familyId = null;
       familyData = null;
       checkItems = [];
       currentDailyStatus = null;
+      cachedChildPraise = null;
+      try { await signOut(auth); } catch (_) {}
+      isSettingUp = false;
       hideBottomNav();
       navigate('#/login');
       showScreen('screen-login');
@@ -1650,6 +1666,8 @@
       if (isSettingUp) return; // 登録/参加処理中は無視
 
       if (user) {
+        // 同じユーザーが既にロード済みなら再処理しない（トークンリフレッシュ対策）
+        if (currentUser && currentUser.uid === user.uid && userDoc) return;
         await loadUserAndRoute(user);
       } else {
         currentUser = null;
@@ -2152,6 +2170,8 @@
     const unsub = onSnapshot(statusRef, (snap) => {
       const data = snap.exists() ? snap.data() : null;
       renderChildStatus(data);
+      // 予定チェックもリアルタイム更新
+      updateChildScheduleChecks(data);
     });
     unsubscribers.push(unsub);
 
@@ -2166,31 +2186,42 @@
     document.getElementById('child-parent-name-label').textContent = `${formatDateJP(new Date())}`;
   }
 
+  let _childScheduleItems = null; // 子ども画面の予定キャッシュ
+
   async function loadChildSchedule() {
     const todayStr = getTodayStr();
     try {
       const schedSnap = await getDoc(doc(db, 'families', familyId, 'schedules', todayStr));
       const section = document.getElementById('child-schedule-section');
       if (schedSnap.exists() && schedSnap.data().items?.length > 0) {
-        const items = schedSnap.data().items;
+        _childScheduleItems = schedSnap.data().items;
         section.style.display = 'block';
-        // Get schedule checks from dailyStatus
-        const statusSnap = await getDoc(doc(db, 'families', familyId, 'dailyStatus', todayStr));
-        const schedChecks = statusSnap.exists() ? (statusSnap.data().scheduleChecks || {}) : {};
-        document.getElementById('child-schedule-list').innerHTML = items.map((item, i) => {
-          const done = schedChecks[i]?.checked || false;
-          return `<div class="schedule-item ${done ? 'checked' : ''}">
-            <div class="schedule-check ${done ? 'done' : ''}">${done ? '✓' : ''}</div>
-            <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
-            <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
-          </div>`;
-        }).join('');
+        renderChildScheduleList({});
       } else {
+        _childScheduleItems = null;
         section.style.display = 'none';
       }
     } catch (e) {
       console.error(e);
     }
+  }
+
+  function renderChildScheduleList(schedChecks) {
+    if (!_childScheduleItems) return;
+    document.getElementById('child-schedule-list').innerHTML = _childScheduleItems.map((item, i) => {
+      const done = schedChecks[i]?.checked || false;
+      return `<div class="schedule-item ${done ? 'checked' : ''}">
+        <div class="schedule-check ${done ? 'done' : ''}">${done ? '✓' : ''}</div>
+        <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
+        <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function updateChildScheduleChecks(statusData) {
+    if (!_childScheduleItems) return;
+    const schedChecks = statusData?.scheduleChecks || {};
+    renderChildScheduleList(schedChecks);
   }
 
   function renderChildStatus(data) {
@@ -2203,19 +2234,23 @@
     // Status card
     const cardEl = document.getElementById('child-status-card');
     if (isCompleted) {
-      const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-      const praise = pick([
-        '今日もしっかり準備できました！',
-        '忘れ物なしで安心ですね',
-        'きちんと確認されています！',
-        '今日も元気に過ごせそうです'
-      ]);
+      if (!cachedChildPraise) {
+        const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+        cachedChildPraise = pick([
+          '今日もしっかり準備できました！',
+          '忘れ物なしで安心ですね',
+          'きちんと確認されています！',
+          '今日も元気に過ごせそうです'
+        ]);
+      }
+      const praise = cachedChildPraise;
       cardEl.innerHTML = `
         <div class="status-card completed">
           <div class="status-icon">&#10004;&#65039;</div>
           <div class="status-text">確認済み</div>
           <div class="status-sub">${completedAt ? formatTime(completedAt) + 'に完了' : '完了'}</div>
           <div class="text-sm" style="margin-top:8px;color:var(--primary)">${praise}</div>
+          <button onclick="window.handleChildClearComplete()" style="margin-top:12px;background:none;border:1px solid #aaa;border-radius:8px;padding:6px 18px;font-size:0.85rem;color:#777;cursor:pointer">やり直してもらう</button>
         </div>`;
     } else if (data && checkedCount > 0) {
       cardEl.innerHTML = `
@@ -2238,6 +2273,13 @@
     listEl.innerHTML = activeItems.map(item => {
       const checked = checks[item.id]?.checked || false;
       const time = checked ? formatTime(checks[item.id]?.checkedAt) : '';
+      // 完了済みだがチェックデータがない項目は完了後に追加されたもの
+      if (isCompleted && !checks[item.id]) {
+        return `<div class="check-item-readonly">
+          <span class="check-icon" style="opacity:0.4">&#8722;</span>
+          <span style="flex:1;color:var(--text-light)">${escapeHtml(item.label)}<span class="text-xs" style="margin-left:6px">（完了後に追加）</span></span>
+        </div>`;
+      }
       return `<div class="check-item-readonly">
         <span class="check-icon">${checked ? '&#9989;' : '&#11036;'}</span>
         <span style="flex:1">${escapeHtml(item.label)}</span>
