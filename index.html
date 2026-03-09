@@ -62,6 +62,11 @@
     .screen.active { display: block; }
     .screen.has-bottom-nav { padding-bottom: calc(80px + var(--safe-bottom)); }
     .screen.has-complete-btn { padding-bottom: calc(100px + var(--safe-bottom)); }
+    .screen.has-complete-btn.has-bottom-nav { padding-bottom: calc(160px + var(--safe-bottom)); }
+    .complete-btn-wrap.above-nav {
+      bottom: calc(56px + var(--safe-bottom));
+      padding-bottom: 12px;
+    }
 
     /* ====== Typography ====== */
     .text-lg { font-size: 1.33rem; font-weight: 700; }
@@ -676,13 +681,10 @@
 <!-- Join Screen removed: 親はリンクから自動参加のみ -->
 
 <!-- ====== Parent Home ====== -->
-<div id="screen-parent" class="screen has-complete-btn">
-  <div class="app-header">
-    <div>
-      <div class="date-main" id="parent-date"></div>
-      <div class="date-greeting" id="parent-greeting"></div>
-    </div>
-    <button class="app-header-settings" onclick="navigate('#/parent/settings')">&#9881;</button>
+<div id="screen-parent" class="screen has-complete-btn has-bottom-nav">
+  <div>
+    <div class="date-main" id="parent-date"></div>
+    <div class="date-greeting" id="parent-greeting"></div>
   </div>
 
   <!-- Completed Banner -->
@@ -706,7 +708,7 @@
   <div id="parent-checks-list"></div>
 
   <!-- Complete Button (fixed bottom) -->
-  <div class="complete-btn-wrap" id="parent-complete-wrap">
+  <div class="complete-btn-wrap above-nav" id="parent-complete-wrap">
     <button class="btn btn-primary" id="btn-complete" onclick="handleComplete()">全部できた！</button>
   </div>
 </div>
@@ -724,7 +726,7 @@
 </div>
 
 <!-- ====== Parent Settings ====== -->
-<div id="screen-parent-settings" class="screen">
+<div id="screen-parent-settings" class="screen has-bottom-nav">
   <div class="page-header">
     <button class="page-header-back" onclick="navigate('#/parent')">&#8592;</button>
     <div class="page-header-title">設定</div>
@@ -744,7 +746,7 @@
 </div>
 
 <!-- ====== Parent Items ====== -->
-<div id="screen-parent-items" class="screen">
+<div id="screen-parent-items" class="screen has-bottom-nav">
   <div class="page-header">
     <button class="page-header-back" onclick="navigate('#/parent/settings')">&#8592;</button>
     <div class="page-header-title">チェック項目</div>
@@ -761,7 +763,7 @@
 </div>
 
 <!-- ====== Parent Schedule ====== -->
-<div id="screen-parent-schedule" class="screen">
+<div id="screen-parent-schedule" class="screen has-bottom-nav">
   <div class="page-header">
     <button class="page-header-back" onclick="navigate('#/parent/settings')">&#8592;</button>
     <div class="page-header-title">予定の管理</div>
@@ -792,6 +794,23 @@
     <div class="card-header">今後の予定</div>
     <div id="parent-schedule-upcoming"></div>
   </div>
+</div>
+
+<!-- ====== Parent History ====== -->
+<div id="screen-parent-history" class="screen has-bottom-nav">
+  <div class="page-header">
+    <div class="page-header-title">&#128197; 直近の記録</div>
+  </div>
+  <div id="parent-history-list"></div>
+</div>
+
+<!-- ====== History Detail (shared by parent/child) ====== -->
+<div id="screen-history-detail" class="screen has-bottom-nav">
+  <div class="page-header">
+    <button class="page-header-back" id="history-detail-back">&#8592;</button>
+    <div class="page-header-title" id="history-detail-title"></div>
+  </div>
+  <div id="history-detail-content"></div>
 </div>
 
 <!-- ====== Child Home ====== -->
@@ -956,6 +975,19 @@
     <span class="nav-icon">&#128197;</span>履歴
   </a>
   <a href="#/child/settings" id="nav-settings">
+    <span class="nav-icon">&#9881;</span>設定
+  </a>
+</div>
+
+<!-- ====== Bottom Nav (Parent) ====== -->
+<div id="bottom-nav-parent" class="bottom-nav" style="display:none">
+  <a href="#/parent" id="nav-parent-home">
+    <span class="nav-icon">&#127968;</span>ホーム
+  </a>
+  <a href="#/parent/history" id="nav-parent-history">
+    <span class="nav-icon">&#128197;</span>履歴
+  </a>
+  <a href="#/parent/settings" id="nav-parent-settings">
     <span class="nav-icon">&#9881;</span>設定
   </a>
 </div>
@@ -1143,7 +1175,17 @@
   }
 
   function updateBottomNav(activeId) {
+    document.getElementById('bottom-nav-parent').style.display = 'none';
     const nav = document.getElementById('bottom-nav');
+    nav.style.display = 'flex';
+    nav.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+    const active = document.getElementById(activeId);
+    if (active) active.classList.add('active');
+  }
+
+  function updateParentNav(activeId) {
+    document.getElementById('bottom-nav').style.display = 'none';
+    const nav = document.getElementById('bottom-nav-parent');
     nav.style.display = 'flex';
     nav.querySelectorAll('a').forEach(a => a.classList.remove('active'));
     const active = document.getElementById(activeId);
@@ -1152,6 +1194,7 @@
 
   function hideBottomNav() {
     document.getElementById('bottom-nav').style.display = 'none';
+    document.getElementById('bottom-nav-parent').style.display = 'none';
   }
 
   // Make functions available from onclick handlers
@@ -1232,16 +1275,19 @@
     if (role === 'parent') {
       switch (hash) {
         case '#/parent/done': initParentDone(); break;
-        case '#/parent/settings': initParentSettings(); break;
-        case '#/parent/items': initParentItems(); break;
-        case '#/parent/schedule': initParentScheduleScreen(); break;
-        case '#/parent': initParentHome(); break;
+        case '#/parent/settings': updateParentNav('nav-parent-settings'); initParentSettings(); break;
+        case '#/parent/items': updateParentNav('nav-parent-settings'); initParentItems(); break;
+        case '#/parent/schedule': updateParentNav('nav-parent-settings'); initParentScheduleScreen(); break;
+        case '#/parent/history': updateParentNav('nav-parent-history'); initParentHistory(); break;
+        case '#/parent/history-detail': updateParentNav('nav-parent-history'); initHistoryDetail('parent'); break;
+        case '#/parent': updateParentNav('nav-parent-home'); initParentHome(); break;
         default: navigate('#/parent'); break;
       }
     } else if (role === 'child') {
       switch (hash) {
         case '#/child': initChildHome(); updateBottomNav('nav-home'); break;
         case '#/child/history': initChildHistory(); updateBottomNav('nav-history'); break;
+        case '#/child/history-detail': initHistoryDetail('child'); updateBottomNav('nav-history'); break;
         case '#/child/settings': initChildSettings(); updateBottomNav('nav-settings'); break;
         case '#/child/items': initChildItems(); updateBottomNav('nav-settings'); break;
         case '#/child/schedule': initChildSchedule(); updateBottomNav('nav-settings'); break;
@@ -1686,7 +1732,6 @@
   // ================================================================
   function initParentHome() {
     showScreen('screen-parent');
-    hideBottomNav();
 
     const today = new Date();
     document.getElementById('parent-date').textContent = formatDateJP(today);
@@ -1904,7 +1949,6 @@
   // ================================================================
   async function initParentDone() {
     showScreen('screen-parent-done');
-    hideBottomNav();
     const now = new Date();
     const h = now.getHours();
     document.getElementById('done-time').textContent =
@@ -1962,7 +2006,6 @@
   // ================================================================
   function initParentSettings() {
     showScreen('screen-parent-settings');
-    hideBottomNav();
     document.getElementById('parent-settings-name').textContent = userDoc.name || '';
   }
 
@@ -1971,7 +2014,6 @@
   // ================================================================
   async function initParentItems() {
     showScreen('screen-parent-items');
-    hideBottomNav();
     await loadCheckItems();
     renderParentItemsList();
   }
@@ -2018,7 +2060,6 @@
   // ================================================================
   async function initParentScheduleScreen() {
     showScreen('screen-parent-schedule');
-    hideBottomNav();
     document.getElementById('parent-schedule-date').value = getTodayStr();
     await loadParentUpcomingSchedules();
   }
@@ -2364,36 +2405,166 @@
       }
     }
 
+    renderHistoryList(container, days, activeItems, 'child');
+  }
+
+  // ================================================================
+  // Parent: History
+  // ================================================================
+  async function initParentHistory() {
+    showScreen('screen-parent-history');
+    const container = document.getElementById('parent-history-list');
+    container.innerHTML = '<div class="text-center text-sm" style="padding:24px">読み込み中...</div>';
+
+    const activeItems = checkItems.filter(i => i.isActive);
+    const days = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      try {
+        const snap = await getDoc(doc(db, 'families', familyId, 'dailyStatus', dateStr));
+        days.push({ date: d, dateStr: dateStr, data: snap.exists() ? snap.data() : null });
+      } catch (e) {
+        days.push({ date: d, dateStr: dateStr, data: null });
+      }
+    }
+
+    renderHistoryList(container, days, activeItems, 'parent');
+  }
+
+  // ================================================================
+  // Shared: Render History List (clickable)
+  // ================================================================
+  function renderHistoryList(container, days, activeItems, role) {
     container.innerHTML = days.map(day => {
       const data = day.data;
+      let icon, statusText, timeText;
       if (!data) {
-        return `<div class="history-day">
-          <div class="history-status-icon">&#8212;</div>
-          <div class="history-info">
-            <div class="history-date">${formatDateShort(day.dateStr)}</div>
-            <div class="history-detail">データなし</div>
-          </div>
-        </div>`;
+        icon = '&#8212;'; statusText = 'データなし'; timeText = '';
+      } else {
+        const checks = data.checks || {};
+        const checkedCount = activeItems.filter(i => checks[i.id]?.checked).length;
+        const isCompleted = data.isCompleted;
+        icon = isCompleted ? '&#9989;' : (checkedCount > 0 ? '&#9888;&#65039;' : '&#10060;');
+        statusText = isCompleted ? '完了' : (checkedCount > 0 ? '未完了' : '未確認');
+        timeText = data.completedAt ? formatTime(data.completedAt) + 'に完了' : '';
       }
 
-      const checks = data.checks || {};
-      const checkedCount = activeItems.filter(i => checks[i.id]?.checked).length;
-      const isCompleted = data.isCompleted;
-      const icon = isCompleted ? '&#9989;' : (checkedCount > 0 ? '&#9888;&#65039;' : '&#10060;');
-      const statusText = isCompleted ? '完了' : (checkedCount > 0 ? '未完了' : '未確認');
-      const timeText = data.completedAt ? formatTime(data.completedAt) + 'に完了' : '';
-
-      return `<div class="history-day">
+      return `<div class="history-day" onclick="window._showHistoryDetail('${day.dateStr}', '${role}')" style="cursor:pointer">
         <div class="history-status-icon">${icon}</div>
         <div class="history-info">
           <div class="history-date">${formatDateShort(day.dateStr)}</div>
-          <div class="history-detail">${statusText} ${checkedCount}/${activeItems.length}項目 ${timeText}</div>
+          <div class="history-detail">${statusText}${data ? ` ${activeItems.filter(i => (data.checks||{})[i.id]?.checked).length}/${activeItems.length}項目` : ''} ${timeText}</div>
         </div>
+        <div style="color:var(--text-light);font-size:1.2rem;margin-left:auto">&#8250;</div>
       </div>`;
     }).join('');
 
     if (days.length === 0) {
       container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128203;</div><div class="empty-text">まだ記録がありません</div></div>';
+    }
+  }
+
+  // ================================================================
+  // Shared: History Detail
+  // ================================================================
+  let _historyDetailDate = null;
+
+  window._showHistoryDetail = function(dateStr, role) {
+    _historyDetailDate = dateStr;
+    navigate(`#/${role}/history-detail`);
+  };
+
+  async function initHistoryDetail(role) {
+    if (!_historyDetailDate) { navigate(`#/${role}/history`); return; }
+    showScreen('screen-history-detail');
+
+    const dateStr = _historyDetailDate;
+    const d = new Date(dateStr + 'T00:00:00');
+    document.getElementById('history-detail-title').textContent = formatDateJP(d);
+    document.getElementById('history-detail-back').onclick = () => navigate(`#/${role}/history`);
+
+    const content = document.getElementById('history-detail-content');
+    content.innerHTML = '<div class="text-center text-sm" style="padding:24px">読み込み中...</div>';
+
+    try {
+      const statusSnap = await getDoc(doc(db, 'families', familyId, 'dailyStatus', dateStr));
+      const data = statusSnap.exists() ? statusSnap.data() : null;
+      const schedSnap = await getDoc(doc(db, 'families', familyId, 'schedules', dateStr));
+      const schedData = schedSnap.exists() ? schedSnap.data() : null;
+
+      const activeItems = checkItems.filter(i => i.isActive);
+      const checks = data?.checks || {};
+      const isCompleted = data?.isCompleted || false;
+      const completedAt = data?.completedAt;
+      const checkedCount = activeItems.filter(i => checks[i.id]?.checked).length;
+
+      let html = '';
+
+      // Status card
+      if (isCompleted) {
+        html += `<div class="status-card completed" style="margin-bottom:16px">
+          <div class="status-icon">&#10004;&#65039;</div>
+          <div class="status-text">確認済み</div>
+          <div class="status-sub">${completedAt ? formatTime(completedAt) + 'に完了' : '完了'} ・ ${checkedCount}/${activeItems.length}項目</div>
+        </div>`;
+      } else if (data && checkedCount > 0) {
+        html += `<div class="status-card pending" style="margin-bottom:16px">
+          <div class="status-icon">&#9203;</div>
+          <div class="status-text">未完了</div>
+          <div class="status-sub">${checkedCount} / ${activeItems.length} チェック済み</div>
+        </div>`;
+      } else {
+        html += `<div class="status-card no-data" style="margin-bottom:16px">
+          <div class="status-icon">&#128164;</div>
+          <div class="status-text">${data ? '未確認' : 'データなし'}</div>
+        </div>`;
+      }
+
+      // Schedule section
+      if (schedData && schedData.items?.length > 0) {
+        const schedChecks = data?.scheduleChecks || {};
+        html += `<div class="card"><div class="card-header">&#128197; この日の予定</div>`;
+        html += schedData.items.map((item, i) => {
+          const done = schedChecks[i]?.checked || false;
+          return `<div class="schedule-item ${done ? 'checked' : ''}">
+            <div class="schedule-check ${done ? 'done' : ''}">${done ? '&#10003;' : ''}</div>
+            <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
+            <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
+          </div>`;
+        }).join('');
+        html += `</div>`;
+      }
+
+      // Check items section
+      html += `<div class="card"><div class="card-header">&#9989; チェック項目</div>`;
+      if (activeItems.length === 0) {
+        html += '<div class="empty-state"><div class="empty-text">チェック項目がありません</div></div>';
+      } else {
+        html += activeItems.map(item => {
+          const checked = checks[item.id]?.checked || false;
+          const time = checked ? formatTime(checks[item.id]?.checkedAt) : '';
+          if (isCompleted && !checks[item.id]) {
+            return `<div class="check-item-readonly">
+              <span class="check-icon" style="opacity:0.4">&#8722;</span>
+              <span style="flex:1;color:var(--text-light)">${escapeHtml(item.label)}<span class="text-xs" style="margin-left:6px">（完了後に追加）</span></span>
+            </div>`;
+          }
+          return `<div class="check-item-readonly">
+            <span class="check-icon">${checked ? '&#9989;' : '&#11036;'}</span>
+            <span style="flex:1">${escapeHtml(item.label)}</span>
+            ${time ? `<span class="text-xs">${time}</span>` : ''}
+          </div>`;
+        }).join('');
+      }
+      html += `</div>`;
+
+      content.innerHTML = html;
+    } catch (e) {
+      console.error('History detail error:', e);
+      content.innerHTML = '<div class="empty-state"><div class="empty-text">データの読み込みに失敗しました</div></div>';
     }
   }
 
