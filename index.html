@@ -763,6 +763,7 @@
     <div class="text-sm">お名前</div>
     <div class="text-md" id="parent-settings-name" style="margin-top:4px"></div>
   </div>
+  <button class="btn btn-secondary mt-24" onclick="handleLogout()" style="width:100%;color:#F44336;border-color:#F44336">ログアウト</button>
 </div>
 
 <!-- ====== Parent Items ====== -->
@@ -1566,6 +1567,7 @@
   async function handleLogout() {
     showModal('ログアウト', 'ログアウトしますか？', 'ログアウト', async () => {
       cleanupListeners();
+      localStorage.clear();
       await signOut(auth);
       currentUser = null;
       userDoc = null;
