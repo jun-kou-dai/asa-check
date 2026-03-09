@@ -336,6 +336,9 @@
       border-bottom: 1px solid var(--border);
     }
     .schedule-item:last-child { border-bottom: none; }
+    .schedule-item.checked .schedule-label { text-decoration: line-through; color: var(--text-light); }
+    .schedule-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; font-size: 0.85rem; }
+    .schedule-check.done { background: var(--success); border-color: var(--success); color: #fff; }
     .schedule-icon { font-size: 1.2rem; }
     .schedule-label { flex: 1; font-size: 1rem; }
     .schedule-delete {
@@ -1693,6 +1696,10 @@
     const unsub = onSnapshot(statusRef, (snap) => {
       currentDailyStatus = snap.exists() ? snap.data() : null;
       renderParentChecks();
+      // Re-render schedule checks if schedule items are loaded
+      if (window._parentScheduleItems) {
+        renderParentScheduleList(window._parentScheduleItems);
+      }
     });
     unsubscribers.push(unsub);
   }
@@ -1704,20 +1711,47 @@
       const section = document.getElementById('parent-schedule-section');
       if (schedSnap.exists() && schedSnap.data().items?.length > 0) {
         const items = schedSnap.data().items;
+        window._parentScheduleItems = items;
         section.style.display = 'block';
-        document.getElementById('parent-schedule-list').innerHTML = items.map(item =>
-          `<div class="schedule-item">
-            <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
-            <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
-          </div>`
-        ).join('');
+        renderParentScheduleList(items);
       } else {
+        window._parentScheduleItems = null;
         section.style.display = 'none';
       }
     } catch (e) {
       console.error('Schedule load error:', e);
     }
   }
+
+  function renderParentScheduleList(items) {
+    const schedChecks = currentDailyStatus?.scheduleChecks || {};
+    document.getElementById('parent-schedule-list').innerHTML = items.map((item, i) => {
+      const done = schedChecks[i]?.checked || false;
+      return `<div class="schedule-item ${done ? 'checked' : ''}" onclick="window._toggleScheduleCheck(${i})">
+        <div class="schedule-check ${done ? 'done' : ''}">${done ? '✓' : ''}</div>
+        <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
+        <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  window._toggleScheduleCheck = async function(index) {
+    if (currentDailyStatus?.isCompleted) return;
+    const todayStr = getTodayStr();
+    const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
+    const current = currentDailyStatus?.scheduleChecks?.[index]?.checked || false;
+    try {
+      const updates = {};
+      updates[`scheduleChecks.${index}.checked`] = !current;
+      if (!currentDailyStatus) {
+        await setDoc(statusRef, { scheduleChecks: { [index]: { checked: true } }, checks: {}, isCompleted: false }, { merge: true });
+      } else {
+        await updateDoc(statusRef, updates);
+      }
+    } catch (e) {
+      console.error('Schedule check error:', e);
+    }
+  };
 
   function renderParentChecks() {
     const activeItems = checkItems.filter(i => i.isActive);
@@ -2124,12 +2158,17 @@
       if (schedSnap.exists() && schedSnap.data().items?.length > 0) {
         const items = schedSnap.data().items;
         section.style.display = 'block';
-        document.getElementById('child-schedule-list').innerHTML = items.map(item =>
-          `<div class="schedule-item">
+        // Get schedule checks from dailyStatus
+        const statusSnap = await getDoc(doc(db, 'families', familyId, 'dailyStatus', todayStr));
+        const schedChecks = statusSnap.exists() ? (statusSnap.data().scheduleChecks || {}) : {};
+        document.getElementById('child-schedule-list').innerHTML = items.map((item, i) => {
+          const done = schedChecks[i]?.checked || false;
+          return `<div class="schedule-item ${done ? 'checked' : ''}">
+            <div class="schedule-check ${done ? 'done' : ''}">${done ? '✓' : ''}</div>
             <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
             <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
-          </div>`
-        ).join('');
+          </div>`;
+        }).join('');
       } else {
         section.style.display = 'none';
       }
