@@ -668,35 +668,12 @@
     <button class="btn btn-primary mb-16" onclick="handleRegister()">新規登録（お子さま側）</button>
   </div>
 
-  <div class="text-center">
-    <a href="#/join" style="font-size:0.89rem">親としてはじめる方はこちら</a>
-  </div>
   <div class="text-center" style="margin-top:24px">
     <a href="javascript:void(0)" onclick="handleAppReset()" style="font-size:0.8rem;color:#aaa">うまくいかない場合はここをタップしてリセット</a>
   </div>
 </div>
 
-<!-- ====== Join Screen (Parent) ====== -->
-<div id="screen-join" class="screen">
-  <div class="text-center mb-32" style="padding-top:40px">
-    <div style="font-size:3rem">&#128101;</div>
-    <div class="text-lg" style="margin-top:8px">家族に参加する</div>
-    <div class="text-sm" style="margin-top:4px">お子さまから受け取った招待コードを入力してください</div>
-  </div>
-
-  <div class="form-group">
-    <label class="form-label">招待コード（6桁）</label>
-    <input type="text" id="join-code" class="form-input form-input-lg" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
-  </div>
-  <div class="form-group">
-    <label class="form-label">あなたのお名前</label>
-    <input type="text" id="join-name" class="form-input" placeholder="お名前" autocomplete="name" style="font-size:1.2rem">
-  </div>
-  <button class="btn btn-primary mb-16" onclick="handleJoin()">参加する</button>
-  <div class="text-center">
-    <a href="#/login" style="font-size:0.89rem">お子さま側のログインはこちら</a>
-  </div>
-</div>
+<!-- Join Screen removed: 親はリンクから自動参加のみ -->
 
 <!-- ====== Parent Home ====== -->
 <div id="screen-parent" class="screen has-complete-btn">
@@ -826,13 +803,13 @@
   <!-- Notification Banners -->
   <div id="child-notify-area"></div>
 
-  <!-- Invite Code (when parent hasn't joined) -->
+  <!-- Invite (when parent hasn't joined) -->
   <div id="child-invite-section" style="display:none">
     <div class="invite-code-display">
-      <div class="invite-code-label">親の方にログインリンクを送ってください</div>
-      <div class="invite-code-value" id="child-invite-code"></div>
-      <button class="btn btn-primary" onclick="handleShareParentLink()" style="margin-top:16px;width:100%;font-size:1.1rem">LINEでログインリンクを送る</button>
-      <div class="invite-code-label" style="margin-top:12px">リンクをタップするだけでログインできます</div>
+      <div style="font-size:2.5rem;margin-bottom:12px">&#128101;</div>
+      <div style="font-size:1.1rem;font-weight:600;margin-bottom:8px">親をこのアプリに招待しましょう</div>
+      <div class="invite-code-label" style="margin-bottom:16px">下のボタンで親にリンクを送ってください。<br>リンクをタップするだけで使えるようになります。</div>
+      <button class="btn btn-primary" onclick="handleShareParentLink()" style="width:100%;font-size:1.1rem">LINEで親にリンクを送る</button>
     </div>
   </div>
 
@@ -884,14 +861,10 @@
     </a></li>
   </ul>
   <div id="child-settings-invite" style="display:none" class="mt-24">
-    <div class="invite-code-display">
-      <div class="invite-code-label">招待コード</div>
-      <div class="invite-code-value" id="child-settings-invite-code"></div>
-    </div>
-    <button class="btn btn-primary mt-16" onclick="handleShareParentLink()" style="width:100%">親にログインリンクを送る</button>
-    <div class="text-xs" style="margin-top:8px;color:#888">LINEなどで親にリンクを送れます。タップするだけでログインできます</div>
+    <button class="btn btn-primary" onclick="handleShareParentLink()" style="width:100%">親にリンクを送る</button>
+    <div class="text-xs" style="margin-top:8px;color:#888">LINEなどで親にリンクを送れます。タップするだけで使えます</div>
     <button class="btn btn-secondary mt-16" onclick="handleResetParent()" style="width:100%">親の接続をリセット</button>
-    <div class="text-xs" style="margin-top:4px;color:#888">親がログインできない時に使います</div>
+    <div class="text-xs" style="margin-top:4px;color:#888">親がうまく使えない時に使います</div>
   </div>
   <button class="btn btn-danger mt-24" onclick="handleLogout()">ログアウト</button>
 </div>
@@ -1185,7 +1158,6 @@
   window.switchAuthTab = switchAuthTab;
   window.handleLogin = handleLogin;
   window.handleRegister = handleRegister;
-  window.handleJoin = handleJoin;
   window.handleLogout = handleLogout;
   window.handleComplete = handleComplete;
   window.handleAddItem = handleAddItem;
@@ -1248,11 +1220,7 @@
     if (!firebaseReady || !currentUser || !userDoc) {
       if (!firebaseReady) return;
       hideBottomNav();
-      if (hash === '#/join') {
-        showScreen('screen-join');
-      } else {
-        showScreen('screen-login');
-      }
+      showScreen('screen-login');
       return;
     }
 
@@ -1696,11 +1664,7 @@
         if (reconnected) return;
 
         hideLoading();
-        if (hash === '#/join') {
-          showScreen('screen-join');
-        } else {
-          showScreen('screen-login');
-        }
+        showScreen('screen-login');
       }
     });
   }
@@ -2146,8 +2110,7 @@
     if (familyData.status === 'pending') {
       document.getElementById('child-invite-section').style.display = 'block';
       document.getElementById('child-status-section').style.display = 'none';
-      document.getElementById('child-invite-code').textContent = familyData.inviteCode;
-      document.getElementById('child-header-title').textContent = '招待コード';
+      document.getElementById('child-header-title').textContent = '親を招待';
       document.getElementById('child-notify-area').innerHTML = '';
 
       // Listen for family status change (parent joining)
@@ -2440,10 +2403,9 @@
   function initChildSettings() {
     showScreen('screen-child-settings');
 
-    // Always show invite code (parent may need it to reconnect)
+    // Always show invite section (parent link)
     const inviteSection = document.getElementById('child-settings-invite');
     inviteSection.style.display = 'block';
-    document.getElementById('child-settings-invite-code').textContent = familyData.inviteCode;
   }
 
   // ================================================================
