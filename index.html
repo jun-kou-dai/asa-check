@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>朝チェック</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#E8A87C">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    /* ====== CSS Variables ====== */
+    :root {
+      --primary: #E8A87C;
+      --primary-dark: #D4906A;
+      --primary-light: #F5D5BE;
+      --bg: #FFF8F0;
+      --bg-card: #FFFFFF;
+      --text: #3D3D3D;
+      --text-secondary: #777777;
+      --text-light: #AAAAAA;
+      --success: #4CAF50;
+      --success-bg: #E8F5E9;
+      --warning: #FF9800;
+      --warning-bg: #FFF3E0;
+      --danger: #F44336;
+      --danger-bg: #FFEBEE;
+      --info: #2196F3;
+      --info-bg: #E3F2FD;
+      --border: #E8E0D8;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --radius: 16px;
+      --radius-sm: 12px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ====== Reset & Base ====== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 18px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      padding-top: var(--safe-top);
+    }
+    a { color: var(--primary-dark); text-decoration: none; }
+
+    /* ====== Layout ====== */
+    .screen {
+      display: none;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px 16px;
+      padding-bottom: calc(20px + var(--safe-bottom));
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    .screen.active { display: block; }
+    .screen.has-bottom-nav { padding-bottom: calc(80px + var(--safe-bottom)); }
+    .screen.has-complete-btn { padding-bottom: calc(100px + var(--safe-bottom)); }
+
+    /* ====== Typography ====== */
+    .text-lg { font-size: 1.33rem; font-weight: 700; }
+    .text-md { font-size: 1.11rem; font-weight: 600; }
+    .text-sm { font-size: 0.89rem; color: var(--text-secondary); }
+    .text-xs { font-size: 0.78rem; color: var(--text-light); }
+    .text-center { text-align: center; }
+
+    /* ====== Cards ====== */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .card-header {
+      font-size: 0.89rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ====== Buttons ====== */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1.11rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.2s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-secondary { background: transparent; color: var(--primary-dark); border: 2px solid var(--primary); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 10px 16px; font-size: 0.89rem; width: auto; display: inline-block; }
+
+    /* ====== Forms ====== */
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 0.89rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      display: block;
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--bg-card);
+      -webkit-appearance: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { outline: none; border-color: var(--primary); }
+    .form-input-lg { font-size: 1.5rem; text-align: center; letter-spacing: 0.3em; padding: 18px; }
+    select.form-input { cursor: pointer; }
+
+    /* ====== Tab Toggle ====== */
+    .tab-toggle {
+      display: flex;
+      background: var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      margin-bottom: 24px;
+    }
+    .tab-toggle button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.89rem;
+      font-weight: 600;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-toggle button.active {
+      background: var(--bg-card);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* ====== Check Items (Parent) ====== */
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      border-left: 4px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .check-item:active { transform: scale(0.99); }
+    .check-item.checked {
+      background: var(--success-bg);
+      border-left-color: var(--success);
+    }
+    .check-indicator {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      border-radius: 50%;
+      border: 3px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-size: 1.2rem;
+      color: transparent;
+    }
+    .check-item.checked .check-indicator {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+    .check-label { flex: 1; font-size: 1.11rem; font-weight: 500; }
+    .check-time { font-size: 0.78rem; color: var(--text-light); white-space: nowrap; }
+
+    /* ====== Check Items (Child - readonly) ====== */
+    .check-item-readonly {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+    .check-item-readonly:last-child { border-bottom: none; }
+    .check-icon { font-size: 1.1rem; min-width: 24px; text-align: center; }
+
+    /* ====== Status Card ====== */
+    .status-card {
+      padding: 20px;
+      border-radius: var(--radius);
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .status-card.completed {
+      background: var(--success-bg);
+      border: 2px solid var(--success);
+    }
+    .status-card.pending {
+      background: var(--warning-bg);
+      border: 2px solid var(--warning);
+    }
+    .status-card.no-data {
+      background: #F5F5F5;
+      border: 2px solid #DDD;
+    }
+    .status-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .status-text { font-size: 1.2rem; font-weight: 700; }
+    .status-sub { font-size: 0.89rem; color: var(--text-secondary); margin-top: 4px; }
+
+    /* ====== Complete Button (fixed bottom) ====== */
+    .complete-btn-wrap {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 16px;
+      padding-bottom: calc(12px + var(--safe-bottom));
+      background: linear-gradient(transparent, var(--bg) 20%);
+      z-index: 50;
+    }
+    .complete-btn-wrap .btn {
+      max-width: 480px;
+      margin: 0 auto;
+      font-size: 1.22rem;
+      padding: 18px;
+    }
+
+    /* ====== Bottom Navigation ====== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: var(--safe-bottom);
+      z-index: 100;
+    }
+    .bottom-nav a {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 0;
+      font-size: 0.67rem;
+      font-weight: 600;
+      color: var(--text-light);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .bottom-nav a.active { color: var(--primary-dark); }
+    .nav-icon { font-size: 1.33rem; margin-bottom: 2px; }
+
+    /* ====== Notification Banner ====== */
+    .notify-banner {
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.89rem;
+      font-weight: 500;
+    }
+    .notify-banner.warning {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning);
+      color: #E65100;
+    }
+    .notify-banner.info {
+      background: var(--info-bg);
+      border: 1px solid var(--info);
+      color: #0D47A1;
+    }
+    .notify-banner-icon { font-size: 1.2rem; }
+    .notify-banner-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      opacity: 0.6;
+    }
+
+    /* ====== Completed Banner ====== */
+    .completed-banner {
+      background: var(--success-bg);
+      border: 2px solid var(--success);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .completed-banner-icon { font-size: 2rem; }
+    .completed-banner-text { font-size: 1rem; font-weight: 600; color: var(--success); margin-top: 4px; }
+    .completed-banner-time { font-size: 0.83rem; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ====== Schedule Items ====== */
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .schedule-item:last-child { border-bottom: none; }
+    .schedule-icon { font-size: 1.2rem; }
+    .schedule-label { flex: 1; font-size: 1rem; }
+    .schedule-delete {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    /* ====== History ====== */
+    .history-day {
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+    .history-status-icon { font-size: 1.5rem; }
+    .history-info { flex: 1; }
+    .history-date { font-size: 0.89rem; font-weight: 600; }
+    .history-detail { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ====== Settings List ====== */
+    .settings-list { list-style: none; }
+    .settings-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    .settings-item:active { opacity: 0.8; }
+    .settings-icon { font-size: 1.3rem; }
+    .settings-arrow { margin-left: auto; color: var(--text-light); }
+
+    /* ====== Toggle Switch ====== */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+    }
+    .toggle-label { font-size: 1rem; font-weight: 500; }
+    .toggle-switch {
+      position: relative;
+      width: 52px;
+      height: 30px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 24px;
+      width: 24px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--success); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+    /* ====== Item Toggle (child items screen) ====== */
+    .item-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+    }
+    .item-label { flex: 1; font-size: 1rem; }
+    .item-label.inactive { color: var(--text-light); text-decoration: line-through; }
+
+    /* ====== Toast ====== */
+    .toast {
+      position: fixed;
+      bottom: calc(100px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-size: 0.83rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 200;
+      max-width: 90%;
+      text-align: center;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ====== Modal ====== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 150;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-box {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+    .modal-title { font-size: 1.11rem; font-weight: 700; margin-bottom: 12px; }
+    .modal-body { font-size: 0.89rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions .btn { flex: 1; }
+
+    /* ====== Loading ====== */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 300;
+      gap: 16px;
+    }
+    .loading-overlay.hidden { display: none; }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 0.89rem; color: var(--text-secondary); }
+
+    /* ====== Page Header ====== */
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .page-header-back {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      padding: 4px;
+    }
+    .page-header-title { font-size: 1.11rem; font-weight: 700; }
+
+    /* ====== Invite Code Display ====== */
+    .invite-code-display {
+      background: var(--info-bg);
+      border: 2px dashed var(--info);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .invite-code-value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      color: var(--info);
+      margin: 8px 0;
+    }
+    .invite-code-label { font-size: 0.83rem; color: var(--text-secondary); }
+
+    /* ====== Done Screen ====== */
+    .done-screen { text-align: center; padding-top: 80px; }
+    .done-icon { font-size: 5rem; margin-bottom: 16px; }
+    .done-title { font-size: 1.5rem; font-weight: 700; color: var(--success); margin-bottom: 8px; }
+    .done-time { font-size: 1rem; color: var(--text-secondary); margin-bottom: 32px; }
+
+    /* ====== Spacing ====== */
+    .mb-8 { margin-bottom: 8px; }
+    .mb-16 { margin-bottom: 16px; }
+    .mb-24 { margin-bottom: 24px; }
+    .mb-32 { margin-bottom: 32px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+
+    /* ====== Setup Screen ====== */
+    .setup-screen {
+      text-align: center;
+      padding-top: 60px;
+    }
+    .setup-icon { font-size: 3rem; margin-bottom: 16px; }
+    .setup-title { font-size: 1.33rem; font-weight: 700; margin-bottom: 8px; }
+    .setup-desc { font-size: 0.89rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 24px; }
+    .setup-code {
+      background: #F0F0F0;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.78rem;
+      word-break: break-all;
+      text-align: left;
+      margin-bottom: 16px;
+    }
+
+    /* ====== App Header ====== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .app-header-settings {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      padding: 4px;
+    }
+
+    /* ====== Date Header ====== */
+    .date-header { margin-bottom: 20px; }
+    .date-main { font-size: 1.33rem; font-weight: 700; }
+    .date-greeting { font-size: 1rem; color: var(--text-secondary); margin-top: 4px; }
+
+    /* ====== Empty State ====== */
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-light);
+    }
+    .empty-icon { font-size: 2rem; margin-bottom: 8px; }
+    .empty-text { font-size: 0.89rem; }
+  </style>
+</head>
+<body>
+
+<!-- ====== Loading Overlay ====== -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">読み込み中...</div>
+</div>
+
+<!-- ====== Setup Screen (Firebase未設定時) ====== -->
+<div id="screen-setup" class="screen">
+  <div class="setup-screen">
+    <div class="setup-icon">&#9881;</div>
+    <div class="setup-title">Firebase設定が必要です</div>
+    <div class="setup-desc">
+      index.html内のfirebaseConfigを<br>あなたのFirebaseプロジェクトの設定に<br>置き換えてください。
+    </div>
+  </div>
+</div>
+
+<!-- ====== Login Screen ====== -->
+<div id="screen-login" class="screen">
+  <div class="text-center mb-32" style="padding-top:40px">
+    <div style="font-size:3rem">&#9745;</div>
+    <div class="text-lg" style="margin-top:8px">朝チェック</div>
+    <div class="text-sm" style="margin-top:4px">毎朝の確認を、家族とシェア</div>
+  </div>
+
+  <div class="tab-toggle mb-16">
+    <button id="tab-login" class="active" onclick="switchAuthTab('login')">ログイン</button>
+    <button id="tab-register" onclick="switchAuthTab('register')">新規登録</button>
+  </div>
+
+  <!-- Login Form -->
+  <div id="form-login">
+    <div class="form-group">
+      <label class="form-label">メールアドレス</label>
+      <input type="email" id="login-email" class="form-input" placeholder="example@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">パスワード</label>
+      <input type="password" id="login-password" class="form-input" placeholder="パスワード" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary mb-16" onclick="handleLogin()">ログイン</button>
+  </div>
+
+  <!-- Register Form -->
+  <div id="form-register" style="display:none">
+    <div class="form-group">
+      <label class="form-label">お名前</label>
+      <input type="text" id="register-name" class="form-input" placeholder="太郎" autocomplete="name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">メールアドレス</label>
+      <input type="email" id="register-email" class="form-input" placeholder="example@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">パスワード（6文字以上）</label>
+      <input type="password" id="register-password" class="form-input" placeholder="パスワード" autocomplete="new-password">
+    </div>
+    <button class="btn btn-primary mb-16" onclick="handleRegister()">新規登録（お子さま側）</button>
+  </div>
+
+  <div class="text-center">
+    <a href="#/join" style="font-size:0.89rem">親としてはじめる方はこちら</a>
+  </div>
+</div>
+
+<!-- ====== Join Screen (Parent) ====== -->
+<div id="screen-join" class="screen">
+  <div class="text-center mb-32" style="padding-top:40px">
+    <div style="font-size:3rem">&#128101;</div>
+    <div class="text-lg" style="margin-top:8px">家族に参加する</div>
+    <div class="text-sm" style="margin-top:4px">お子さまから受け取った招待コードを入力してください</div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">招待コード（6桁）</label>
+    <input type="text" id="join-code" class="form-input form-input-lg" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+  </div>
+  <div class="form-group">
+    <label class="form-label">あなたのお名前</label>
+    <input type="text" id="join-name" class="form-input" placeholder="お名前" autocomplete="name" style="font-size:1.2rem">
+  </div>
+  <button class="btn btn-primary mb-16" onclick="handleJoin()">参加する</button>
+  <div class="text-center">
+    <a href="#/login" style="font-size:0.89rem">お子さま側のログインはこちら</a>
+  </div>
+</div>
+
+<!-- ====== Parent Home ====== -->
+<div id="screen-parent" class="screen has-complete-btn">
+  <div class="app-header">
+    <div>
+      <div class="date-main" id="parent-date"></div>
+      <div class="date-greeting" id="parent-greeting"></div>
+    </div>
+    <button class="app-header-settings" onclick="navigate('#/parent/settings')">&#9881;</button>
+  </div>
+
+  <!-- Completed Banner -->
+  <div id="parent-completed-banner" class="completed-banner" style="display:none">
+    <div class="completed-banner-icon">&#10004;&#65039;</div>
+    <div class="completed-banner-text">今日の確認は完了しています</div>
+    <div class="completed-banner-time" id="parent-completed-time"></div>
+  </div>
+
+  <!-- Schedule -->
+  <div id="parent-schedule-section" style="display:none">
+    <div class="card">
+      <div class="card-header">&#128197; 今日の予定</div>
+      <div id="parent-schedule-list"></div>
+    </div>
+  </div>
+
+  <!-- Check Items -->
+  <div class="card-header" style="margin-top:4px">&#9989; 今日の確認</div>
+  <div id="parent-checks-list"></div>
+
+  <!-- Complete Button (fixed bottom) -->
+  <div class="complete-btn-wrap" id="parent-complete-wrap">
+    <button class="btn btn-primary" id="btn-complete" onclick="handleComplete()">全部できた！</button>
+  </div>
+</div>
+
+<!-- ====== Parent Done ====== -->
+<div id="screen-parent-done" class="screen">
+  <div class="done-screen">
+    <div class="done-icon">&#127881;</div>
+    <div class="done-title">確認完了しました！</div>
+    <div class="done-time" id="done-time"></div>
+    <div class="text-sm mb-32">家族に共有されました</div>
+    <button class="btn btn-secondary" onclick="navigate('#/parent')">ホームに戻る</button>
+  </div>
+</div>
+
+<!-- ====== Parent Settings ====== -->
+<div id="screen-parent-settings" class="screen">
+  <div class="page-header">
+    <button class="page-header-back" onclick="navigate('#/parent')">&#8592;</button>
+    <div class="page-header-title">設定</div>
+  </div>
+  <div class="card">
+    <div class="text-sm">お名前</div>
+    <div class="text-md" id="parent-settings-name" style="margin-top:4px"></div>
+  </div>
+  <button class="btn btn-danger mt-24" onclick="handleLogout()">ログアウト</button>
+</div>
+
+<!-- ====== Child Home ====== -->
+<div id="screen-child" class="screen has-bottom-nav">
+  <div class="app-header">
+    <div class="text-lg" id="child-header-title">確認状況</div>
+  </div>
+
+  <!-- Notification Banners -->
+  <div id="child-notify-area"></div>
+
+  <!-- Invite Code (when parent hasn't joined) -->
+  <div id="child-invite-section" style="display:none">
+    <div class="invite-code-display">
+      <div class="invite-code-label">親の方に招待コードを伝えてください</div>
+      <div class="invite-code-value" id="child-invite-code"></div>
+      <div class="invite-code-label">この画面を見せるか、コードを伝えてください</div>
+    </div>
+  </div>
+
+  <!-- Status (when parent has joined) -->
+  <div id="child-status-section" style="display:none">
+    <div class="text-sm mb-8" id="child-parent-name-label"></div>
+
+    <!-- Status Card -->
+    <div id="child-status-card"></div>
+
+    <!-- Schedule -->
+    <div id="child-schedule-section" style="display:none">
+      <div class="card">
+        <div class="card-header">&#128197; 今日の予定</div>
+        <div id="child-schedule-list"></div>
+      </div>
+    </div>
+
+    <!-- Check Items -->
+    <div class="card">
+      <div class="card-header">&#128203; チェック項目</div>
+      <div id="child-checks-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Child History ====== -->
+<div id="screen-child-history" class="screen has-bottom-nav">
+  <div class="page-header">
+    <div class="page-header-title">&#128197; 直近の記録</div>
+  </div>
+  <div id="child-history-list"></div>
+</div>
+
+<!-- ====== Child Settings Hub ====== -->
+<div id="screen-child-settings" class="screen has-bottom-nav">
+  <div class="page-header">
+    <div class="page-header-title">&#9881; 設定</div>
+  </div>
+  <ul class="settings-list">
+    <li><a class="settings-item" href="#/child/items">
+      <span class="settings-icon">&#9989;</span>チェック項目の設定<span class="settings-arrow">&#8250;</span>
+    </a></li>
+    <li><a class="settings-item" href="#/child/schedule">
+      <span class="settings-icon">&#128197;</span>予定の設定<span class="settings-arrow">&#8250;</span>
+    </a></li>
+    <li><a class="settings-item" href="#/child/notify">
+      <span class="settings-icon">&#128276;</span>通知の設定<span class="settings-arrow">&#8250;</span>
+    </a></li>
+  </ul>
+  <div id="child-settings-invite" style="display:none" class="mt-24">
+    <div class="invite-code-display">
+      <div class="invite-code-label">招待コード</div>
+      <div class="invite-code-value" id="child-settings-invite-code"></div>
+    </div>
+  </div>
+  <button class="btn btn-danger mt-24" onclick="handleLogout()">ログアウト</button>
+</div>
+
+<!-- ====== Child Items ====== -->
+<div id="screen-child-items" class="screen has-bottom-nav">
+  <div class="page-header">
+    <button class="page-header-back" onclick="navigate('#/child/settings')">&#8592;</button>
+    <div class="page-header-title">チェック項目</div>
+  </div>
+  <div id="child-items-list"></div>
+  <div class="card mt-16">
+    <div class="card-header">項目を追加</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="add-item-input" class="form-input" placeholder="新しい項目名" style="flex:1">
+      <button class="btn btn-primary btn-sm" onclick="handleAddItem()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Child Schedule ====== -->
+<div id="screen-child-schedule" class="screen has-bottom-nav">
+  <div class="page-header">
+    <button class="page-header-back" onclick="navigate('#/child/settings')">&#8592;</button>
+    <div class="page-header-title">予定の設定</div>
+  </div>
+  <div class="card">
+    <div class="card-header">予定を追加</div>
+    <div class="form-group">
+      <label class="form-label">日付</label>
+      <input type="date" id="schedule-date" class="form-input">
+    </div>
+    <div class="form-group">
+      <label class="form-label">カテゴリ</label>
+      <select id="schedule-category" class="form-input">
+        <option value="通院">&#127973; 通院</option>
+        <option value="ゴミ出し">&#128465; ゴミ出し</option>
+        <option value="買い物">&#128722; 買い物</option>
+        <option value="家族と電話">&#128222; 家族と電話</option>
+        <option value="その他">&#128221; その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ（任意）</label>
+      <input type="text" id="schedule-label" class="form-input" placeholder="例: 内科 10時">
+    </div>
+    <button class="btn btn-primary" onclick="handleAddSchedule()">予定を追加</button>
+  </div>
+  <div class="mt-16">
+    <div class="card-header">今後の予定</div>
+    <div id="child-schedule-upcoming"></div>
+  </div>
+</div>
+
+<!-- ====== Child Notify Settings ====== -->
+<div id="screen-child-notify" class="screen has-bottom-nav">
+  <div class="page-header">
+    <button class="page-header-back" onclick="navigate('#/child/settings')">&#8592;</button>
+    <div class="page-header-title">通知の設定</div>
+  </div>
+  <div class="card">
+    <div class="toggle-row">
+      <span class="toggle-label">未確認通知</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="notify-enabled" onchange="saveNotifySettings()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="text-xs" style="margin-top:-4px;margin-bottom:12px">
+      時間までに確認が完了していない場合、アプリを開いた時にお知らせします
+    </div>
+    <div class="form-group">
+      <label class="form-label">通常の通知時刻</label>
+      <input type="time" id="notify-normal-time" class="form-input" value="12:00" onchange="saveNotifySettings()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">通院日の通知時刻</label>
+      <input type="time" id="notify-hospital-time" class="form-input" value="10:00" onchange="saveNotifySettings()">
+    </div>
+  </div>
+</div>
+
+<!-- ====== Bottom Nav (Child) ====== -->
+<div id="bottom-nav" class="bottom-nav" style="display:none">
+  <a href="#/child" id="nav-home">
+    <span class="nav-icon">&#127968;</span>ホーム
+  </a>
+  <a href="#/child/history" id="nav-history">
+    <span class="nav-icon">&#128197;</span>履歴
+  </a>
+  <a href="#/child/settings" id="nav-settings">
+    <span class="nav-icon">&#9881;</span>設定
+  </a>
+</div>
+
+<!-- ====== Modal ====== -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" id="modal-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" id="modal-confirm"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Toast ====== -->
+<div id="toast" class="toast"></div>
+
+<!-- ====== JavaScript ====== -->
+<script type="module">
+  // ================================================================
+  // Firebase SDK Imports
+  // ================================================================
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js';
+  import {
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signInAnonymously, onAuthStateChanged, signOut
+  } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js';
+  import {
+    getFirestore, doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+    query, where, orderBy, onSnapshot, serverTimestamp, addDoc
+  } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+
+  // ================================================================
+  // Firebase Config - あなたのプロジェクトの設定に置き換えてください
+  // ================================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyD6EuIC7lDiu0qO_3SAs3TVS8nCPF2QzYQ",
+    authDomain: "asa-check-app-2026.firebaseapp.com",
+    projectId: "asa-check-app-2026",
+    storageBucket: "asa-check-app-2026.firebasestorage.app",
+    messagingSenderId: "997344270694",
+    appId: "1:997344270694:web:95c46b56b504bc3396d0a7"
+  };
+
+  // ================================================================
+  // Firebase Init
+  // ================================================================
+  let app, auth, db;
+  let firebaseReady = false;
+
+  try {
+    if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+      showScreen('screen-setup');
+      hideLoading();
+    } else {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      firebaseReady = true;
+    }
+  } catch (e) {
+    console.error('Firebase init error:', e);
+    showScreen('screen-setup');
+    hideLoading();
+  }
+
+  // ================================================================
+  // State
+  // ================================================================
+  let currentUser = null;
+  let userDoc = null;
+  let familyId = null;
+  let familyData = null;
+  let checkItems = [];
+  let currentDailyStatus = null;
+  let unsubscribers = [];
+  let isSettingUp = false; // 登録/参加処理中フラグ（onAuthStateChangedの早期発火を抑制）
+
+  // ================================================================
+  // Utility Functions
+  // ================================================================
+  function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function formatDateJP(date) {
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    return `${date.getMonth() + 1}月${date.getDate()}日（${days[date.getDay()]}）`;
+  }
+
+  function formatDateShort(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    return `${d.getMonth() + 1}/${d.getDate()}（${days[d.getDay()]}）`;
+  }
+
+  function formatTime(timestamp) {
+    if (!timestamp) return '';
+    const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 11) return 'おはようございます';
+    if (h >= 11 && h < 17) return 'こんにちは';
+    return 'こんばんは';
+  }
+
+  function generateInviteCode() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
+  function getCategoryIcon(cat) {
+    const icons = {
+      '通院': '&#127973;',
+      'ゴミ出し': '&#128465;',
+      '買い物': '&#128722;',
+      '家族と電話': '&#128222;',
+      'その他': '&#128221;'
+    };
+    return icons[cat] || '&#128221;';
+  }
+
+  // ================================================================
+  // UI Helpers
+  // ================================================================
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  }
+
+  function hideLoading() {
+    document.getElementById('loading-overlay').classList.add('hidden');
+  }
+
+  function showLoading() {
+    document.getElementById('loading-overlay').classList.remove('hidden');
+  }
+
+  let toastTimer;
+  function showToast(msg, duration = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  function showModal(title, body, confirmText, onConfirm) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').textContent = body;
+    const confirmBtn = document.getElementById('modal-confirm');
+    confirmBtn.textContent = confirmText;
+    confirmBtn.onclick = () => { closeModal(); onConfirm(); };
+    document.getElementById('modal-overlay').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('active');
+  }
+
+  function updateBottomNav(activeId) {
+    const nav = document.getElementById('bottom-nav');
+    nav.style.display = 'flex';
+    nav.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+    const active = document.getElementById(activeId);
+    if (active) active.classList.add('active');
+  }
+
+  function hideBottomNav() {
+    document.getElementById('bottom-nav').style.display = 'none';
+  }
+
+  // Make functions available from onclick handlers
+  window.switchAuthTab = switchAuthTab;
+  window.handleLogin = handleLogin;
+  window.handleRegister = handleRegister;
+  window.handleJoin = handleJoin;
+  window.handleLogout = handleLogout;
+  window.handleComplete = handleComplete;
+  window.handleAddItem = handleAddItem;
+  window.handleAddSchedule = handleAddSchedule;
+  window.saveNotifySettings = saveNotifySettings;
+  window.navigate = navigate;
+  window.closeModal = closeModal;
+
+  // ================================================================
+  // Router
+  // ================================================================
+  function navigate(hash) {
+    window.location.hash = hash;
+  }
+
+  function handleRoute() {
+    const hash = window.location.hash || '';
+
+    // 未認証状態のルーティング
+    if (!firebaseReady || !currentUser || !userDoc) {
+      if (!firebaseReady) return;
+      hideBottomNav();
+      if (hash === '#/join') {
+        showScreen('screen-join');
+      } else {
+        showScreen('screen-login');
+      }
+      return;
+    }
+
+    cleanupListeners();
+    hideBottomNav();
+
+    const role = userDoc.role;
+
+    if (role === 'parent') {
+      switch (hash) {
+        case '#/parent/done': initParentDone(); break;
+        case '#/parent/settings': initParentSettings(); break;
+        case '#/parent': initParentHome(); break;
+        default: navigate('#/parent'); break;
+      }
+    } else if (role === 'child') {
+      switch (hash) {
+        case '#/child': initChildHome(); updateBottomNav('nav-home'); break;
+        case '#/child/history': initChildHistory(); updateBottomNav('nav-history'); break;
+        case '#/child/settings': initChildSettings(); updateBottomNav('nav-settings'); break;
+        case '#/child/items': initChildItems(); updateBottomNav('nav-settings'); break;
+        case '#/child/schedule': initChildSchedule(); updateBottomNav('nav-settings'); break;
+        case '#/child/notify': initChildNotify(); updateBottomNav('nav-settings'); break;
+        default: navigate('#/child'); break;
+      }
+    }
+  }
+
+  function cleanupListeners() {
+    unsubscribers.forEach(fn => fn());
+    unsubscribers = [];
+  }
+
+  window.addEventListener('hashchange', handleRoute);
+
+  // ================================================================
+  // Auth Tab Toggle
+  // ================================================================
+  function switchAuthTab(tab) {
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+  }
+
+  // ================================================================
+  // Auth: Login
+  // ================================================================
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { showToast('メールアドレスとパスワードを入力してください'); return; }
+
+    showLoading();
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      hideLoading();
+      if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') {
+        showToast('メールアドレスまたはパスワードが正しくありません');
+      } else {
+        showToast('ログインに失敗しました');
+        console.error(e);
+      }
+    }
+  }
+
+  // ================================================================
+  // Auth: Register (Child)
+  // ================================================================
+  async function handleRegister() {
+    const name = document.getElementById('register-name').value.trim();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+
+    if (!name) { showToast('お名前を入力してください'); return; }
+    if (!email) { showToast('メールアドレスを入力してください'); return; }
+    if (password.length < 6) { showToast('パスワードは6文字以上にしてください'); return; }
+
+    showLoading();
+    isSettingUp = true; // onAuthStateChangedの早期発火を抑制
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = cred.user.uid;
+      const inviteCode = generateInviteCode();
+
+      // Create family
+      const familyRef = doc(collection(db, 'families'));
+      const newFamilyId = familyRef.id;
+
+      await setDoc(familyRef, {
+        childId: uid,
+        childName: name,
+        parentId: null,
+        parentName: null,
+        inviteCode: inviteCode,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+
+      // Create invite code lookup
+      await setDoc(doc(db, 'inviteCodes', inviteCode), {
+        familyId: newFamilyId,
+        createdAt: serverTimestamp()
+      });
+
+      // Create user
+      await setDoc(doc(db, 'users', uid), {
+        role: 'child',
+        name: name,
+        email: email,
+        familyId: newFamilyId,
+        createdAt: serverTimestamp()
+      });
+
+      // Create default check items
+      const defaultItems = [
+        { label: '薬を飲んだ', sortOrder: 0, isActive: true },
+        { label: '財布を持った', sortOrder: 1, isActive: true },
+        { label: '鍵を持った', sortOrder: 2, isActive: true },
+        { label: '携帯電話を持った', sortOrder: 3, isActive: true },
+        { label: '診察券を持った', sortOrder: 4, isActive: true },
+        { label: 'ゴミ出しした', sortOrder: 5, isActive: true },
+      ];
+      for (const item of defaultItems) {
+        await addDoc(collection(db, 'families', newFamilyId, 'checkItems'), item);
+      }
+
+      // Firestore書き込み完了後、手動でユーザーデータをロード
+      isSettingUp = false;
+      await loadUserAndRoute(cred.user);
+    } catch (e) {
+      isSettingUp = false;
+      hideLoading();
+      if (e.code === 'auth/email-already-in-use') {
+        showToast('このメールアドレスは既に登録されています');
+      } else {
+        showToast('登録に失敗しました');
+        console.error(e);
+      }
+    }
+  }
+
+  // ================================================================
+  // Auth: Join (Parent)
+  // ================================================================
+  async function handleJoin() {
+    const code = document.getElementById('join-code').value.trim();
+    const name = document.getElementById('join-name').value.trim();
+
+    if (code.length !== 6) { showToast('6桁の招待コードを入力してください'); return; }
+    if (!name) { showToast('お名前を入力してください'); return; }
+
+    showLoading();
+    isSettingUp = true; // onAuthStateChangedの早期発火を抑制
+    try {
+      // Sign in anonymously first
+      const cred = await signInAnonymously(auth);
+      const uid = cred.user.uid;
+
+      // Look up invite code
+      const codeSnap = await getDoc(doc(db, 'inviteCodes', code));
+      if (!codeSnap.exists()) {
+        isSettingUp = false;
+        await signOut(auth);
+        hideLoading();
+        showToast('招待コードが見つかりません');
+        return;
+      }
+
+      const targetFamilyId = codeSnap.data().familyId;
+
+      // Create parent user doc FIRST (so isMember() works for subsequent operations)
+      await setDoc(doc(db, 'users', uid), {
+        role: 'parent',
+        name: name,
+        email: null,
+        familyId: targetFamilyId,
+        createdAt: serverTimestamp()
+      });
+
+      // Now verify family exists and is pending (isMember works since user doc has familyId)
+      const familySnap = await getDoc(doc(db, 'families', targetFamilyId));
+      if (!familySnap.exists() || familySnap.data().status !== 'pending') {
+        // Rollback: delete user doc and sign out
+        await deleteDoc(doc(db, 'users', uid));
+        isSettingUp = false;
+        await signOut(auth);
+        hideLoading();
+        showToast('この招待コードは既に使用済みです');
+        return;
+      }
+
+      // Update family (include parentName for child to display)
+      await updateDoc(doc(db, 'families', targetFamilyId), {
+        parentId: uid,
+        parentName: name,
+        status: 'active'
+      });
+
+      // Delete invite code (used)
+      await deleteDoc(doc(db, 'inviteCodes', code));
+
+      // Firestore書き込み完了後、手動でユーザーデータをロード
+      isSettingUp = false;
+      await loadUserAndRoute(cred.user);
+    } catch (e) {
+      isSettingUp = false;
+      hideLoading();
+      showToast('参加に失敗しました');
+      console.error(e);
+      try { await signOut(auth); } catch (_) {}
+    }
+  }
+
+  // ================================================================
+  // Auth: Logout
+  // ================================================================
+  async function handleLogout() {
+    showModal('ログアウト', 'ログアウトしますか？', 'ログアウト', async () => {
+      cleanupListeners();
+      await signOut(auth);
+      currentUser = null;
+      userDoc = null;
+      familyId = null;
+      familyData = null;
+      checkItems = [];
+      currentDailyStatus = null;
+      hideBottomNav();
+      navigate('#/login');
+      showScreen('screen-login');
+    });
+  }
+
+  // ================================================================
+  // Auth: User Data Load & Route (shared by onAuthStateChanged and register/join)
+  // ================================================================
+  async function loadUserAndRoute(user) {
+    currentUser = user;
+    try {
+      const uSnap = await getDoc(doc(db, 'users', user.uid));
+      if (uSnap.exists()) {
+        userDoc = uSnap.data();
+        familyId = userDoc.familyId;
+
+        // Load family data
+        const fSnap = await getDoc(doc(db, 'families', familyId));
+        if (fSnap.exists()) {
+          familyData = fSnap.data();
+        }
+
+        // Load check items
+        await loadCheckItems();
+
+        hideLoading();
+        // Navigate to appropriate home
+        if (userDoc.role === 'parent') {
+          navigate('#/parent');
+        } else {
+          navigate('#/child');
+        }
+        handleRoute();
+      } else {
+        // User doc doesn't exist (shouldn't happen normally)
+        hideLoading();
+        showScreen('screen-login');
+        navigate('#/login');
+      }
+    } catch (e) {
+      console.error('Error loading user:', e);
+      hideLoading();
+      showScreen('screen-login');
+      navigate('#/login');
+    }
+  }
+
+  // ================================================================
+  // Auth: State Observer
+  // ================================================================
+  if (firebaseReady) {
+    onAuthStateChanged(auth, async (user) => {
+      if (isSettingUp) return; // 登録/参加処理中は無視
+
+      if (user) {
+        await loadUserAndRoute(user);
+      } else {
+        currentUser = null;
+        userDoc = null;
+        familyId = null;
+        familyData = null;
+        hideLoading();
+        const hash = window.location.hash;
+        if (hash === '#/join') {
+          showScreen('screen-join');
+        } else {
+          showScreen('screen-login');
+        }
+      }
+    });
+  }
+
+  // ================================================================
+  // Load Check Items
+  // ================================================================
+  async function loadCheckItems() {
+    const q = query(
+      collection(db, 'families', familyId, 'checkItems'),
+      orderBy('sortOrder')
+    );
+    const snap = await getDocs(q);
+    checkItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }
+
+  // ================================================================
+  // Parent Home
+  // ================================================================
+  function initParentHome() {
+    showScreen('screen-parent');
+    hideBottomNav();
+
+    const today = new Date();
+    document.getElementById('parent-date').textContent = formatDateJP(today);
+    document.getElementById('parent-greeting').textContent =
+      `${userDoc.name}さん、${getGreeting()}`;
+
+    // Load schedule for today
+    loadParentSchedule();
+
+    // Listen to daily status
+    const todayStr = getTodayStr();
+    const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
+    const unsub = onSnapshot(statusRef, (snap) => {
+      currentDailyStatus = snap.exists() ? snap.data() : null;
+      renderParentChecks();
+    });
+    unsubscribers.push(unsub);
+  }
+
+  async function loadParentSchedule() {
+    const todayStr = getTodayStr();
+    try {
+      const schedSnap = await getDoc(doc(db, 'families', familyId, 'schedules', todayStr));
+      const section = document.getElementById('parent-schedule-section');
+      if (schedSnap.exists() && schedSnap.data().items?.length > 0) {
+        const items = schedSnap.data().items;
+        section.style.display = 'block';
+        document.getElementById('parent-schedule-list').innerHTML = items.map(item =>
+          `<div class="schedule-item">
+            <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
+            <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
+          </div>`
+        ).join('');
+      } else {
+        section.style.display = 'none';
+      }
+    } catch (e) {
+      console.error('Schedule load error:', e);
+    }
+  }
+
+  function renderParentChecks() {
+    const activeItems = checkItems.filter(i => i.isActive);
+    const checks = currentDailyStatus?.checks || {};
+    const isCompleted = currentDailyStatus?.isCompleted || false;
+    const completedAt = currentDailyStatus?.completedAt;
+
+    // Completed banner
+    const banner = document.getElementById('parent-completed-banner');
+    if (isCompleted) {
+      banner.style.display = 'block';
+      document.getElementById('parent-completed-time').textContent =
+        completedAt ? `${formatTime(completedAt)}に完了` : '完了済み';
+    } else {
+      banner.style.display = 'none';
+    }
+
+    // Check items
+    const container = document.getElementById('parent-checks-list');
+    container.innerHTML = activeItems.map(item => {
+      const checked = checks[item.id]?.checked || false;
+      const time = checked ? formatTime(checks[item.id]?.checkedAt) : '';
+      return `<div class="check-item ${checked ? 'checked' : ''}"
+                   data-item-id="${item.id}" onclick="window._toggleCheck('${item.id}')">
+        <div class="check-indicator">${checked ? '&#10003;' : ''}</div>
+        <div class="check-label">${escapeHtml(item.label)}</div>
+        ${time ? `<div class="check-time">${time}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    // Complete button
+    const completeWrap = document.getElementById('parent-complete-wrap');
+    const completeBtn = document.getElementById('btn-complete');
+    if (isCompleted) {
+      completeWrap.style.display = 'none';
+    } else {
+      completeWrap.style.display = 'block';
+      completeBtn.disabled = false;
+    }
+  }
+
+  // Toggle check (parent)
+  window._toggleCheck = async function(itemId) {
+    if (currentDailyStatus?.isCompleted) return;
+
+    const todayStr = getTodayStr();
+    const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
+    const currentChecked = currentDailyStatus?.checks?.[itemId]?.checked || false;
+    const newChecked = !currentChecked;
+
+    try {
+      if (!currentDailyStatus) {
+        await setDoc(statusRef, {
+          checks: { [itemId]: { checked: true, checkedAt: serverTimestamp() } },
+          isCompleted: false,
+          completedAt: null
+        });
+      } else {
+        const updates = {};
+        updates[`checks.${itemId}.checked`] = newChecked;
+        updates[`checks.${itemId}.checkedAt`] = newChecked ? serverTimestamp() : null;
+        await updateDoc(statusRef, updates);
+      }
+    } catch (e) {
+      showToast('保存に失敗しました');
+      console.error(e);
+    }
+  };
+
+  // ================================================================
+  // Parent: Complete
+  // ================================================================
+  async function handleComplete() {
+    const activeItems = checkItems.filter(i => i.isActive);
+    const checks = currentDailyStatus?.checks || {};
+    const uncheckedCount = activeItems.filter(i => !checks[i.id]?.checked).length;
+
+    if (uncheckedCount > 0) {
+      showModal(
+        '確認',
+        `未確認の項目が${uncheckedCount}件あります。このまま完了しますか？`,
+        '完了する',
+        doComplete
+      );
+    } else {
+      doComplete();
+    }
+  }
+
+  async function doComplete() {
+    const todayStr = getTodayStr();
+    const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
+
+    try {
+      if (!currentDailyStatus) {
+        await setDoc(statusRef, {
+          checks: {},
+          isCompleted: true,
+          completedAt: serverTimestamp()
+        });
+      } else {
+        await updateDoc(statusRef, {
+          isCompleted: true,
+          completedAt: serverTimestamp()
+        });
+      }
+      navigate('#/parent/done');
+    } catch (e) {
+      showToast('完了の保存に失敗しました');
+      console.error(e);
+    }
+  }
+
+  // ================================================================
+  // Parent Done
+  // ================================================================
+  function initParentDone() {
+    showScreen('screen-parent-done');
+    hideBottomNav();
+    const now = new Date();
+    document.getElementById('done-time').textContent =
+      `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} に完了しました`;
+  }
+
+  // ================================================================
+  // Parent Settings
+  // ================================================================
+  function initParentSettings() {
+    showScreen('screen-parent-settings');
+    hideBottomNav();
+    document.getElementById('parent-settings-name').textContent = userDoc.name || '';
+  }
+
+  // ================================================================
+  // Child Home
+  // ================================================================
+  function initChildHome() {
+    showScreen('screen-child');
+
+    // Check if parent has joined
+    if (familyData.status === 'pending') {
+      document.getElementById('child-invite-section').style.display = 'block';
+      document.getElementById('child-status-section').style.display = 'none';
+      document.getElementById('child-invite-code').textContent = familyData.inviteCode;
+      document.getElementById('child-header-title').textContent = '招待コード';
+      document.getElementById('child-notify-area').innerHTML = '';
+
+      // Listen for family status change (parent joining)
+      const unsub = onSnapshot(doc(db, 'families', familyId), (snap) => {
+        if (snap.exists() && snap.data().status === 'active') {
+          familyData = snap.data();
+          cleanupListeners();
+          initChildHome();
+        }
+      });
+      unsubscribers.push(unsub);
+      return;
+    }
+
+    // Parent has joined - show status
+    document.getElementById('child-invite-section').style.display = 'none';
+    document.getElementById('child-status-section').style.display = 'block';
+
+    // Load parent name
+    loadParentName();
+
+    // Load schedule
+    loadChildSchedule();
+
+    // Listen to daily status
+    const todayStr = getTodayStr();
+    const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
+    const unsub = onSnapshot(statusRef, (snap) => {
+      const data = snap.exists() ? snap.data() : null;
+      renderChildStatus(data);
+    });
+    unsubscribers.push(unsub);
+
+    // Check notifications
+    checkNotifications();
+  }
+
+  function loadParentName() {
+    // Read parent name from family document (no need to access parent's user doc)
+    const parentName = familyData.parentName || '親';
+    document.getElementById('child-header-title').textContent = `${parentName}さんの確認状況`;
+    document.getElementById('child-parent-name-label').textContent = `${formatDateJP(new Date())}`;
+  }
+
+  async function loadChildSchedule() {
+    const todayStr = getTodayStr();
+    try {
+      const schedSnap = await getDoc(doc(db, 'families', familyId, 'schedules', todayStr));
+      const section = document.getElementById('child-schedule-section');
+      if (schedSnap.exists() && schedSnap.data().items?.length > 0) {
+        const items = schedSnap.data().items;
+        section.style.display = 'block';
+        document.getElementById('child-schedule-list').innerHTML = items.map(item =>
+          `<div class="schedule-item">
+            <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
+            <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
+          </div>`
+        ).join('');
+      } else {
+        section.style.display = 'none';
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function renderChildStatus(data) {
+    const activeItems = checkItems.filter(i => i.isActive);
+    const checks = data?.checks || {};
+    const isCompleted = data?.isCompleted || false;
+    const completedAt = data?.completedAt;
+    const checkedCount = activeItems.filter(i => checks[i.id]?.checked).length;
+
+    // Status card
+    const cardEl = document.getElementById('child-status-card');
+    if (isCompleted) {
+      cardEl.innerHTML = `
+        <div class="status-card completed">
+          <div class="status-icon">&#10004;&#65039;</div>
+          <div class="status-text">確認済み</div>
+          <div class="status-sub">${completedAt ? formatTime(completedAt) + 'に完了' : '完了'}</div>
+        </div>`;
+    } else if (data && checkedCount > 0) {
+      cardEl.innerHTML = `
+        <div class="status-card pending">
+          <div class="status-icon">&#9203;</div>
+          <div class="status-text">確認中</div>
+          <div class="status-sub">${checkedCount} / ${activeItems.length} チェック済み</div>
+        </div>`;
+    } else {
+      cardEl.innerHTML = `
+        <div class="status-card no-data">
+          <div class="status-icon">&#128164;</div>
+          <div class="status-text">まだ確認されていません</div>
+          <div class="status-sub">今日の確認はまだ始まっていません</div>
+        </div>`;
+    }
+
+    // Check items (read-only)
+    const listEl = document.getElementById('child-checks-list');
+    listEl.innerHTML = activeItems.map(item => {
+      const checked = checks[item.id]?.checked || false;
+      const time = checked ? formatTime(checks[item.id]?.checkedAt) : '';
+      return `<div class="check-item-readonly">
+        <span class="check-icon">${checked ? '&#9989;' : '&#11036;'}</span>
+        <span style="flex:1">${escapeHtml(item.label)}</span>
+        ${time ? `<span class="text-xs">${time}</span>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // ================================================================
+  // Child: Notifications (in-app)
+  // ================================================================
+  async function checkNotifications() {
+    const settings = getNotifySettings();
+    if (!settings.enabled) {
+      document.getElementById('child-notify-area').innerHTML = '';
+      return;
+    }
+
+    const todayStr = getTodayStr();
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // Check max shown today
+    const shownKey = `notify_shown_${todayStr}`;
+    const shown = parseInt(localStorage.getItem(shownKey) || '0');
+    if (shown >= 2) return;
+
+    // Get status
+    try {
+      const statusSnap = await getDoc(doc(db, 'families', familyId, 'dailyStatus', todayStr));
+      if (statusSnap.exists() && statusSnap.data().isCompleted) {
+        document.getElementById('child-notify-area').innerHTML = '';
+        return;
+      }
+
+      // Check schedule for hospital
+      const schedSnap = await getDoc(doc(db, 'families', familyId, 'schedules', todayStr));
+      const hasHospital = schedSnap.exists() &&
+        schedSnap.data().items?.some(i => i.category === '通院');
+
+      const hospitalMinutes = parseTimeStr(settings.hospitalTime);
+      const normalMinutes = parseTimeStr(settings.normalTime);
+
+      let message = null;
+      if (hasHospital && currentMinutes >= hospitalMinutes) {
+        message = '今日は通院の予定がありますが、まだ確認が完了していません';
+      } else if (currentMinutes >= normalMinutes) {
+        message = 'まだ朝の確認が完了していません';
+      }
+
+      if (message) {
+        document.getElementById('child-notify-area').innerHTML = `
+          <div class="notify-banner warning">
+            <span class="notify-banner-icon">&#9888;&#65039;</span>
+            <span>${escapeHtml(message)}</span>
+            <button class="notify-banner-close" onclick="this.parentElement.remove()">&#10005;</button>
+          </div>`;
+        localStorage.setItem(shownKey, String(shown + 1));
+      } else {
+        document.getElementById('child-notify-area').innerHTML = '';
+      }
+    } catch (e) {
+      console.error('Notification check error:', e);
+    }
+  }
+
+  function getNotifySettings() {
+    return {
+      enabled: localStorage.getItem('notify_enabled') !== 'false',
+      normalTime: localStorage.getItem('notify_normal_time') || '12:00',
+      hospitalTime: localStorage.getItem('notify_hospital_time') || '10:00'
+    };
+  }
+
+  function parseTimeStr(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + (m || 0);
+  }
+
+  function saveNotifySettings() {
+    localStorage.setItem('notify_enabled', document.getElementById('notify-enabled').checked);
+    localStorage.setItem('notify_normal_time', document.getElementById('notify-normal-time').value);
+    localStorage.setItem('notify_hospital_time', document.getElementById('notify-hospital-time').value);
+    showToast('設定を保存しました');
+  }
+
+  // ================================================================
+  // Child: History
+  // ================================================================
+  async function initChildHistory() {
+    showScreen('screen-child-history');
+    const container = document.getElementById('child-history-list');
+    container.innerHTML = '<div class="text-center text-sm" style="padding:24px">読み込み中...</div>';
+
+    const activeItems = checkItems.filter(i => i.isActive);
+    const days = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      try {
+        const snap = await getDoc(doc(db, 'families', familyId, 'dailyStatus', dateStr));
+        days.push({
+          date: d,
+          dateStr: dateStr,
+          data: snap.exists() ? snap.data() : null
+        });
+      } catch (e) {
+        days.push({ date: d, dateStr: dateStr, data: null });
+      }
+    }
+
+    container.innerHTML = days.map(day => {
+      const data = day.data;
+      if (!data) {
+        return `<div class="history-day">
+          <div class="history-status-icon">&#8212;</div>
+          <div class="history-info">
+            <div class="history-date">${formatDateShort(day.dateStr)}</div>
+            <div class="history-detail">データなし</div>
+          </div>
+        </div>`;
+      }
+
+      const checks = data.checks || {};
+      const checkedCount = activeItems.filter(i => checks[i.id]?.checked).length;
+      const isCompleted = data.isCompleted;
+      const icon = isCompleted ? '&#9989;' : (checkedCount > 0 ? '&#9888;&#65039;' : '&#10060;');
+      const statusText = isCompleted ? '完了' : (checkedCount > 0 ? '未完了' : '未確認');
+      const timeText = data.completedAt ? formatTime(data.completedAt) + 'に完了' : '';
+
+      return `<div class="history-day">
+        <div class="history-status-icon">${icon}</div>
+        <div class="history-info">
+          <div class="history-date">${formatDateShort(day.dateStr)}</div>
+          <div class="history-detail">${statusText} ${checkedCount}/${activeItems.length}項目 ${timeText}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    if (days.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128203;</div><div class="empty-text">まだ記録がありません</div></div>';
+    }
+  }
+
+  // ================================================================
+  // Child: Settings Hub
+  // ================================================================
+  function initChildSettings() {
+    showScreen('screen-child-settings');
+
+    // Show invite code if still pending
+    const inviteSection = document.getElementById('child-settings-invite');
+    if (familyData.status === 'pending') {
+      inviteSection.style.display = 'block';
+      document.getElementById('child-settings-invite-code').textContent = familyData.inviteCode;
+    } else {
+      inviteSection.style.display = 'none';
+    }
+  }
+
+  // ================================================================
+  // Child: Items Management
+  // ================================================================
+  async function initChildItems() {
+    showScreen('screen-child-items');
+    await loadCheckItems();
+    renderItemsList();
+  }
+
+  function renderItemsList() {
+    const container = document.getElementById('child-items-list');
+    container.innerHTML = checkItems.map(item => `
+      <div class="item-row">
+        <span class="item-label ${item.isActive ? '' : 'inactive'}">${escapeHtml(item.label)}</span>
+        <label class="toggle-switch">
+          <input type="checkbox" ${item.isActive ? 'checked' : ''}
+                 onchange="window._toggleItem('${item.id}', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    `).join('');
+  }
+
+  window._toggleItem = async function(itemId, isActive) {
+    try {
+      await updateDoc(doc(db, 'families', familyId, 'checkItems', itemId), { isActive });
+      const item = checkItems.find(i => i.id === itemId);
+      if (item) item.isActive = isActive;
+      renderItemsList();
+    } catch (e) {
+      showToast('更新に失敗しました');
+      console.error(e);
+    }
+  };
+
+  async function handleAddItem() {
+    const input = document.getElementById('add-item-input');
+    const label = input.value.trim();
+    if (!label) { showToast('項目名を入力してください'); return; }
+
+    try {
+      const maxOrder = checkItems.reduce((max, i) => Math.max(max, i.sortOrder || 0), -1);
+      await addDoc(collection(db, 'families', familyId, 'checkItems'), {
+        label: label,
+        sortOrder: maxOrder + 1,
+        isActive: true
+      });
+      input.value = '';
+      await loadCheckItems();
+      renderItemsList();
+      showToast('項目を追加しました');
+    } catch (e) {
+      showToast('追加に失敗しました');
+      console.error(e);
+    }
+  }
+
+  // ================================================================
+  // Child: Schedule Management
+  // ================================================================
+  async function initChildSchedule() {
+    showScreen('screen-child-schedule');
+
+    // Set default date to today
+    document.getElementById('schedule-date').value = getTodayStr();
+
+    await loadUpcomingSchedules();
+  }
+
+  async function loadUpcomingSchedules() {
+    const container = document.getElementById('child-schedule-upcoming');
+    const today = getTodayStr();
+    const schedules = [];
+
+    // Load next 14 days of schedules
+    for (let i = 0; i < 14; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      try {
+        const snap = await getDoc(doc(db, 'families', familyId, 'schedules', dateStr));
+        if (snap.exists() && snap.data().items?.length > 0) {
+          schedules.push({ dateStr, items: snap.data().items });
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (schedules.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-text">今後の予定はありません</div></div>';
+      return;
+    }
+
+    container.innerHTML = schedules.map(sched =>
+      `<div class="card" style="padding:12px 16px">
+        <div class="text-sm" style="font-weight:600;margin-bottom:8px">${formatDateShort(sched.dateStr)}</div>
+        ${sched.items.map((item, idx) =>
+          `<div class="schedule-item">
+            <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
+            <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
+            <button class="schedule-delete" onclick="window._deleteScheduleItem('${sched.dateStr}', ${idx})">&#10005;</button>
+          </div>`
+        ).join('')}
+      </div>`
+    ).join('');
+  }
+
+  async function handleAddSchedule() {
+    const date = document.getElementById('schedule-date').value;
+    const category = document.getElementById('schedule-category').value;
+    const label = document.getElementById('schedule-label').value.trim();
+
+    if (!date) { showToast('日付を選択してください'); return; }
+
+    try {
+      const schedRef = doc(db, 'families', familyId, 'schedules', date);
+      const snap = await getDoc(schedRef);
+      const existing = snap.exists() ? (snap.data().items || []) : [];
+
+      existing.push({ category, label, id: Date.now().toString() });
+
+      await setDoc(schedRef, { items: existing });
+      document.getElementById('schedule-label').value = '';
+      await loadUpcomingSchedules();
+      showToast('予定を追加しました');
+    } catch (e) {
+      showToast('追加に失敗しました');
+      console.error(e);
+    }
+  }
+
+  window._deleteScheduleItem = async function(dateStr, index) {
+    try {
+      const schedRef = doc(db, 'families', familyId, 'schedules', dateStr);
+      const snap = await getDoc(schedRef);
+      if (!snap.exists()) return;
+      const items = snap.data().items || [];
+      items.splice(index, 1);
+      if (items.length === 0) {
+        await deleteDoc(schedRef);
+      } else {
+        await setDoc(schedRef, { items });
+      }
+      await loadUpcomingSchedules();
+      showToast('予定を削除しました');
+    } catch (e) {
+      showToast('削除に失敗しました');
+      console.error(e);
+    }
+  };
+
+  // ================================================================
+  // Child: Notify Settings
+  // ================================================================
+  function initChildNotify() {
+    showScreen('screen-child-notify');
+    const settings = getNotifySettings();
+    document.getElementById('notify-enabled').checked = settings.enabled;
+    document.getElementById('notify-normal-time').value = settings.normalTime;
+    document.getElementById('notify-hospital-time').value = settings.hospitalTime;
+  }
+
+  // ================================================================
+  // HTML Escape
+  // ================================================================
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

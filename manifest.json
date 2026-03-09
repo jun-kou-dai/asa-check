@@ -1,0 +1,21 @@
+{
+  "name": "朝チェック",
+  "short_name": "朝チェック",
+  "description": "毎朝の確認を、家族とシェア",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F0",
+  "theme_color": "#E8A87C",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%23E8A87C' width='192' height='192' rx='32'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='white'%3E%E2%9C%93%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%23E8A87C' width='512' height='512' rx='80'/%3E%3Ctext x='256' y='350' font-size='280' text-anchor='middle' fill='white'%3E%E2%9C%93%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
