@@ -713,6 +713,7 @@
     <div class="completed-banner-icon">&#10004;&#65039;</div>
     <div class="completed-banner-text">今日の確認は完了しています</div>
     <div class="completed-banner-time" id="parent-completed-time"></div>
+    <button onclick="handleClearComplete()" style="margin-top:10px;background:none;border:1px solid #aaa;border-radius:8px;padding:6px 18px;font-size:0.85rem;color:#777;cursor:pointer">やり直す</button>
   </div>
 
   <!-- Schedule -->
@@ -1195,6 +1196,19 @@
   window.saveNotifySettings = saveNotifySettings;
   window.navigate = navigate;
   window.closeModal = closeModal;
+  window.handleClearComplete = function() {
+    showModal('やり直し', '今日のチェックをクリアしてやり直しますか？', 'やり直す', async () => {
+      try {
+        const todayStr = getTodayStr();
+        const statusRef = doc(db, 'families', familyId, 'dailyStatus', todayStr);
+        await setDoc(statusRef, { checks: {}, scheduleChecks: {}, isCompleted: false, completedAt: null });
+        showToast('クリアしました');
+      } catch (e) {
+        showToast('クリアに失敗しました');
+        console.error(e);
+      }
+    });
+  };
   window.handleAppReset = async function() {
     try { await signOut(auth); } catch (_) {}
     localStorage.clear();
