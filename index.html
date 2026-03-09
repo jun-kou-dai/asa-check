@@ -752,11 +752,18 @@
     <button class="page-header-back" onclick="navigate('#/parent')">&#8592;</button>
     <div class="page-header-title">設定</div>
   </div>
-  <div class="card">
+  <ul class="settings-list">
+    <li><a class="settings-item" href="#/parent/items">
+      <span class="settings-icon">&#9989;</span>チェック項目の編集<span class="settings-arrow">&#8250;</span>
+    </a></li>
+    <li><a class="settings-item" href="#/parent/schedule">
+      <span class="settings-icon">&#128197;</span>予定の管理<span class="settings-arrow">&#8250;</span>
+    </a></li>
+  </ul>
+  <div class="card mt-24">
     <div class="text-sm">お名前</div>
     <div class="text-md" id="parent-settings-name" style="margin-top:4px"></div>
   </div>
-  <button class="btn btn-secondary mt-24" onclick="handleLogout()" style="width:100%;color:#F44336;border-color:#F44336">ログアウト</button>
 </div>
 
 <!-- ====== Parent Items ====== -->
