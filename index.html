@@ -730,10 +730,11 @@
 <!-- ====== Parent Done ====== -->
 <div id="screen-parent-done" class="screen">
   <div class="done-screen">
-    <div class="done-icon">&#127881;</div>
-    <div class="done-title">確認完了しました！</div>
+    <div class="done-icon" id="done-icon">&#127881;</div>
+    <div class="done-title" id="done-title">確認完了しました！</div>
     <div class="done-time" id="done-time"></div>
-    <div class="text-sm mb-32">家族に共有されました</div>
+    <div class="text-sm mb-32" id="done-praise"></div>
+    <div class="text-xs" id="done-streak" style="color:var(--primary);margin-bottom:24px"></div>
     <button class="btn btn-secondary" onclick="navigate('#/parent')">ホームに戻る</button>
   </div>
 </div>
@@ -744,11 +745,69 @@
     <button class="page-header-back" onclick="navigate('#/parent')">&#8592;</button>
     <div class="page-header-title">設定</div>
   </div>
-  <div class="card">
+  <ul class="settings-list">
+    <li><a class="settings-item" href="#/parent/items">
+      <span class="settings-icon">&#9989;</span>チェック項目の編集<span class="settings-arrow">&#8250;</span>
+    </a></li>
+    <li><a class="settings-item" href="#/parent/schedule">
+      <span class="settings-icon">&#128197;</span>予定の管理<span class="settings-arrow">&#8250;</span>
+    </a></li>
+  </ul>
+  <div class="card mt-24">
     <div class="text-sm">お名前</div>
     <div class="text-md" id="parent-settings-name" style="margin-top:4px"></div>
   </div>
-  <button class="btn btn-danger mt-24" onclick="handleLogout()">ログアウト</button>
+</div>
+
+<!-- ====== Parent Items ====== -->
+<div id="screen-parent-items" class="screen">
+  <div class="page-header">
+    <button class="page-header-back" onclick="navigate('#/parent/settings')">&#8592;</button>
+    <div class="page-header-title">チェック項目</div>
+  </div>
+  <div class="text-sm mb-16" style="line-height:1.6">毎朝チェックしたい項目を自由に追加・編集できます</div>
+  <div id="parent-items-list"></div>
+  <div class="card mt-16">
+    <div class="card-header">項目を追加</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="parent-add-item-input" class="form-input" placeholder="例: 窓を閉めた" style="flex:1">
+      <button class="btn btn-primary btn-sm" onclick="handleAddItemParent()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Parent Schedule ====== -->
+<div id="screen-parent-schedule" class="screen">
+  <div class="page-header">
+    <button class="page-header-back" onclick="navigate('#/parent/settings')">&#8592;</button>
+    <div class="page-header-title">予定の管理</div>
+  </div>
+  <div class="card">
+    <div class="card-header">予定を追加</div>
+    <div class="form-group">
+      <label class="form-label">日付</label>
+      <input type="date" id="parent-schedule-date" class="form-input">
+    </div>
+    <div class="form-group">
+      <label class="form-label">カテゴリ</label>
+      <select id="parent-schedule-category" class="form-input">
+        <option value="通院">&#127973; 通院</option>
+        <option value="ゴミ出し">&#128465; ゴミ出し</option>
+        <option value="買い物">&#128722; 買い物</option>
+        <option value="家族と電話">&#128222; 家族と電話</option>
+        <option value="その他">&#128221; その他</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ（任意）</label>
+      <input type="text" id="parent-schedule-label" class="form-input" placeholder="例: 内科 10時">
+    </div>
+    <button class="btn btn-primary" onclick="handleAddScheduleParent()">予定を追加</button>
+  </div>
+  <div class="mt-16">
+    <div class="card-header">今後の予定</div>
+    <div id="parent-schedule-upcoming"></div>
+  </div>
 </div>
 
 <!-- ====== Child Home ====== -->
@@ -1019,9 +1078,28 @@
 
   function getGreeting() {
     const h = new Date().getHours();
-    if (h >= 5 && h < 11) return 'おはようございます';
-    if (h >= 11 && h < 17) return 'こんにちは';
-    return 'こんばんは';
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+    if (h >= 5 && h < 9) return pick([
+      'おはようございます！今日もいい一日に',
+      'おはよう！よく眠れましたか？',
+      'おはようございます。今日も元気にいきましょう',
+      'おはよう！朝ごはんは食べましたか？'
+    ]);
+    if (h >= 9 && h < 11) return pick([
+      'おはようございます。お出かけ前にチェック！',
+      '今日のチェック、はじめましょう',
+      'さあ、今日の準備はどうですか？'
+    ]);
+    if (h >= 11 && h < 17) return pick([
+      'こんにちは！今日も元気ですか？',
+      'こんにちは。午後もがんばりましょう',
+      'こんにちは！いいお天気ですね'
+    ]);
+    return pick([
+      'こんばんは。今日もお疲れさまでした',
+      'こんばんは！ゆっくり過ごしてくださいね',
+      'こんばんは。明日の準備もお忘れなく'
+    ]);
   }
 
   function generateInviteCode() {
@@ -1099,6 +1177,8 @@
   window.handleComplete = handleComplete;
   window.handleAddItem = handleAddItem;
   window.handleAddSchedule = handleAddSchedule;
+  window.handleAddItemParent = handleAddItemParent;
+  window.handleAddScheduleParent = handleAddScheduleParent;
   window.saveNotifySettings = saveNotifySettings;
   window.navigate = navigate;
   window.closeModal = closeModal;
@@ -1134,6 +1214,8 @@
       switch (hash) {
         case '#/parent/done': initParentDone(); break;
         case '#/parent/settings': initParentSettings(); break;
+        case '#/parent/items': initParentItems(); break;
+        case '#/parent/schedule': initParentScheduleScreen(); break;
         case '#/parent': initParentHome(); break;
         default: navigate('#/parent'); break;
       }
@@ -1276,9 +1358,8 @@
     if (!name) { showToast('お名前を入力してください'); return; }
 
     showLoading();
-    isSettingUp = true; // onAuthStateChangedの早期発火を抑制
+    isSettingUp = true;
     try {
-      // Sign in anonymously first
       const cred = await signInAnonymously(auth);
       const uid = cred.user.uid;
 
@@ -1294,7 +1375,7 @@
 
       const targetFamilyId = codeSnap.data().familyId;
 
-      // Create parent user doc FIRST (so isMember() works for subsequent operations)
+      // Create parent user doc FIRST (so isMember() works)
       await setDoc(doc(db, 'users', uid), {
         role: 'parent',
         name: name,
@@ -1303,29 +1384,25 @@
         createdAt: serverTimestamp()
       });
 
-      // Now verify family exists and is pending (isMember works since user doc has familyId)
       const familySnap = await getDoc(doc(db, 'families', targetFamilyId));
-      if (!familySnap.exists() || familySnap.data().status !== 'pending') {
-        // Rollback: delete user doc and sign out
+      if (!familySnap.exists()) {
         await deleteDoc(doc(db, 'users', uid));
         isSettingUp = false;
         await signOut(auth);
         hideLoading();
-        showToast('この招待コードは既に使用済みです');
+        showToast('この招待コードは無効です');
         return;
       }
 
-      // Update family (include parentName for child to display)
+      // Allow both initial join (pending) AND re-join (active)
       await updateDoc(doc(db, 'families', targetFamilyId), {
         parentId: uid,
         parentName: name,
         status: 'active'
       });
 
-      // Delete invite code (used)
-      await deleteDoc(doc(db, 'inviteCodes', code));
+      // Keep invite code for re-login (don't delete it)
 
-      // Firestore書き込み完了後、手動でユーザーデータをロード
       isSettingUp = false;
       await loadUserAndRoute(cred.user);
     } catch (e) {
@@ -1544,6 +1621,19 @@
         updates[`checks.${itemId}.checkedAt`] = newChecked ? serverTimestamp() : null;
         await updateDoc(statusRef, updates);
       }
+      // Show mini encouragement on check
+      if (newChecked) {
+        const activeItems = checkItems.filter(i => i.isActive);
+        const checks = currentDailyStatus?.checks || {};
+        const checkedCount = activeItems.filter(i => i.id === itemId || checks[i.id]?.checked).length;
+        if (checkedCount === activeItems.length) {
+          showToast('全部チェックできました！あとは完了ボタンを押すだけ');
+        } else if (checkedCount === 1) {
+          showToast('いいね！その調子');
+        } else if (checkedCount === Math.ceil(activeItems.length / 2)) {
+          showToast('半分できました！あと少し');
+        }
+      }
     } catch (e) {
       showToast('保存に失敗しました');
       console.error(e);
@@ -1597,12 +1687,59 @@
   // ================================================================
   // Parent Done
   // ================================================================
-  function initParentDone() {
+  async function initParentDone() {
     showScreen('screen-parent-done');
     hideBottomNav();
     const now = new Date();
+    const h = now.getHours();
     document.getElementById('done-time').textContent =
-      `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} に完了しました`;
+      `${h}:${String(now.getMinutes()).padStart(2, '0')} に完了しました`;
+
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+    // Time-based praise
+    if (h < 8) {
+      document.getElementById('done-icon').innerHTML = '&#127774;';
+      document.getElementById('done-title').textContent = pick([
+        '早起きさん！すばらしい！', '朝早くにえらい！', '今日も早起き、すごいです！'
+      ]);
+    } else if (h < 10) {
+      document.getElementById('done-icon').innerHTML = '&#127881;';
+      document.getElementById('done-title').textContent = pick([
+        '完璧です！', '今日もバッチリ！', 'すべて確認できましたね！'
+      ]);
+    } else {
+      document.getElementById('done-icon').innerHTML = '&#128079;';
+      document.getElementById('done-title').textContent = pick([
+        'お疲れさまです！', '確認ありがとう！', '今日も忘れ物なし！'
+      ]);
+    }
+
+    document.getElementById('done-praise').textContent = pick([
+      '家族に共有されました。安心してもらえますね',
+      '今日も元気に過ごしましょう！',
+      '忘れ物ゼロで気持ちいいですね！',
+      '家族がきっと安心しますよ'
+    ]);
+
+    // Streak calculation
+    try {
+      let streak = 1;
+      for (let i = 1; i <= 30; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const snap = await getDoc(doc(db, 'families', familyId, 'dailyStatus', ds));
+        if (snap.exists() && snap.data().isCompleted) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      if (streak >= 2) {
+        document.getElementById('done-streak').textContent = `${streak}日連続で確認できています！`;
+      }
+    } catch (e) { /* ignore */ }
   }
 
   // ================================================================
@@ -1613,6 +1750,140 @@
     hideBottomNav();
     document.getElementById('parent-settings-name').textContent = userDoc.name || '';
   }
+
+  // ================================================================
+  // Parent: Items Management
+  // ================================================================
+  async function initParentItems() {
+    showScreen('screen-parent-items');
+    hideBottomNav();
+    await loadCheckItems();
+    renderParentItemsList();
+  }
+
+  function renderParentItemsList() {
+    const container = document.getElementById('parent-items-list');
+    container.innerHTML = checkItems.map(item => `
+      <div class="item-row">
+        <span class="item-label ${item.isActive ? '' : 'inactive'}">${escapeHtml(item.label)}</span>
+        <label class="toggle-switch">
+          <input type="checkbox" ${item.isActive ? 'checked' : ''}
+                 onchange="window._toggleItem('${item.id}', this.checked); setTimeout(renderParentItemsList, 300)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    `).join('');
+  }
+  window.renderParentItemsList = renderParentItemsList;
+
+  async function handleAddItemParent() {
+    const input = document.getElementById('parent-add-item-input');
+    const label = input.value.trim();
+    if (!label) { showToast('項目名を入力してください'); return; }
+
+    try {
+      const maxOrder = checkItems.reduce((max, i) => Math.max(max, i.sortOrder || 0), -1);
+      await addDoc(collection(db, 'families', familyId, 'checkItems'), {
+        label: label,
+        sortOrder: maxOrder + 1,
+        isActive: true
+      });
+      input.value = '';
+      await loadCheckItems();
+      renderParentItemsList();
+      showToast('追加しました！');
+    } catch (e) {
+      showToast('追加に失敗しました');
+      console.error(e);
+    }
+  }
+
+  // ================================================================
+  // Parent: Schedule Management
+  // ================================================================
+  async function initParentScheduleScreen() {
+    showScreen('screen-parent-schedule');
+    hideBottomNav();
+    document.getElementById('parent-schedule-date').value = getTodayStr();
+    await loadParentUpcomingSchedules();
+  }
+
+  async function loadParentUpcomingSchedules() {
+    const container = document.getElementById('parent-schedule-upcoming');
+    const schedules = [];
+
+    for (let i = 0; i < 14; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      try {
+        const snap = await getDoc(doc(db, 'families', familyId, 'schedules', dateStr));
+        if (snap.exists() && snap.data().items?.length > 0) {
+          schedules.push({ dateStr, items: snap.data().items });
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    if (schedules.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-text">今後の予定はありません</div></div>';
+      return;
+    }
+
+    container.innerHTML = schedules.map(sched =>
+      `<div class="card" style="padding:12px 16px">
+        <div class="text-sm" style="font-weight:600;margin-bottom:8px">${formatDateShort(sched.dateStr)}</div>
+        ${sched.items.map((item, idx) =>
+          `<div class="schedule-item">
+            <span class="schedule-icon">${getCategoryIcon(item.category)}</span>
+            <span class="schedule-label">${escapeHtml(item.category)}${item.label ? ' - ' + escapeHtml(item.label) : ''}</span>
+            <button class="schedule-delete" onclick="window._deleteScheduleParent('${sched.dateStr}', ${idx})">&#10005;</button>
+          </div>`
+        ).join('')}
+      </div>`
+    ).join('');
+  }
+
+  async function handleAddScheduleParent() {
+    const date = document.getElementById('parent-schedule-date').value;
+    const category = document.getElementById('parent-schedule-category').value;
+    const label = document.getElementById('parent-schedule-label').value.trim();
+
+    if (!date) { showToast('日付を選択してください'); return; }
+
+    try {
+      const schedRef = doc(db, 'families', familyId, 'schedules', date);
+      const snap = await getDoc(schedRef);
+      const existing = snap.exists() ? (snap.data().items || []) : [];
+      existing.push({ category, label, id: Date.now().toString() });
+      await setDoc(schedRef, { items: existing });
+      document.getElementById('parent-schedule-label').value = '';
+      await loadParentUpcomingSchedules();
+      showToast('予定を追加しました！');
+    } catch (e) {
+      showToast('追加に失敗しました');
+      console.error(e);
+    }
+  }
+
+  window._deleteScheduleParent = async function(dateStr, index) {
+    try {
+      const schedRef = doc(db, 'families', familyId, 'schedules', dateStr);
+      const snap = await getDoc(schedRef);
+      if (!snap.exists()) return;
+      const items = snap.data().items || [];
+      items.splice(index, 1);
+      if (items.length === 0) {
+        await deleteDoc(schedRef);
+      } else {
+        await setDoc(schedRef, { items });
+      }
+      await loadParentUpcomingSchedules();
+      showToast('予定を削除しました');
+    } catch (e) {
+      showToast('削除に失敗しました');
+      console.error(e);
+    }
+  };
 
   // ================================================================
   // Child Home
@@ -1702,11 +1973,19 @@
     // Status card
     const cardEl = document.getElementById('child-status-card');
     if (isCompleted) {
+      const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+      const praise = pick([
+        '今日もしっかり準備できました！',
+        '忘れ物なしで安心ですね',
+        'きちんと確認されています！',
+        '今日も元気に過ごせそうです'
+      ]);
       cardEl.innerHTML = `
         <div class="status-card completed">
           <div class="status-icon">&#10004;&#65039;</div>
           <div class="status-text">確認済み</div>
           <div class="status-sub">${completedAt ? formatTime(completedAt) + 'に完了' : '完了'}</div>
+          <div class="text-sm" style="margin-top:8px;color:var(--primary)">${praise}</div>
         </div>`;
     } else if (data && checkedCount > 0) {
       cardEl.innerHTML = `
